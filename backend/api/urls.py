@@ -3,12 +3,14 @@ from django.urls import include, path
 from rest_framework import routers
 
 from api.views import (CustomUserViewSet, CategoryViewSet, ServiceViewSet,
+                       HistoryViewSet,
                        CatalogViewSet,
                        SubscriptionViewSet,
                        AutoPaymentViewSet, PaymentViewSet, SellHistoryViewSet)
 
 router_v1 = routers.DefaultRouter()
 router_v1.register('users', CustomUserViewSet, basename='users')
+router_v1.register(r'history', HistoryViewSet)
 router_v1.register(r'categories', CategoryViewSet)
 router_v1.register(r'services', ServiceViewSet)
 router_v1.register(r'catalog', CatalogViewSet)

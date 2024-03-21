@@ -5,212 +5,130 @@ from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Exists, OuterRef
 
-from users.models import CustomUser
+# from users.models import CustomUser
 
 User = get_user_model()
 
+SHOW_SYMBOLS = 30
 
-class Ingredient(models.Model):
-    """Модель ингредиента. """
 
-    name = models.CharField(
-        max_length=200,
-        verbose_name='Название'
-    )
-    measurement_unit = models.CharField(
-        max_length=200,
-        verbose_name='Единицы измерения'
-    )
+class Category(models.Model):
+    """Модель тематической категории сервиса. """
+
+    title = models.CharField('Заголовок', max_length=30)
+    slug = models.SlugField('Слаг', unique=True)
+    # description = models.TextField('Описание')
 
     class Meta:
-        verbose_name = 'Ингредиент'
-        verbose_name_plural = 'Ингредиенты'
+        verbose_name = 'категория'
+        verbose_name_plural = 'категории'
+        ordering = ('title',)
 
     def __str__(self):
-        return f'{self.name} ({self.measurement_unit})'
+        return self.title[:SHOW_SYMBOLS]
 
 
-class Tag(models.Model):
-    """Модель тега. """
-
-    name = models.CharField(
-        max_length=200, verbose_name='Название', unique=True
-    )
-    color = models.CharField(
-        max_length=200, null=True, verbose_name='Цвет', unique=True
-    )
-    slug = models.SlugField(
-        max_length=200, null=True, verbose_name='Слаг', unique=True
-    )
-
-
-class RecipeQuerySet(models.QuerySet):
+class ServiceQuerySet(models.QuerySet):
     """Вспомогательная модель отображения
-    отметки "в избранном" для списка рецептов.
+    отметки "вы подписаны" для списка сервисов.
     """
 
     def add_user_annotations(self, user_id: Optional[int]):
         return self.annotate(
-            is_favorite=Exists(
-                Favorite.objects.filter(
-                    user_id=user_id, recipe__pk=OuterRef('pk')
+            is_subscribed=Exists(
+                Subscription.objects.filter(
+                    user_id=user_id, service__pk=OuterRef('pk')
                 )
             ),
         )
 
 
-class Recipe(models.Model):
-    """Модель рецепта. """
+class Service(models.Model):
+    """Модель сервиса. """
 
-    author = models.ForeignKey(
-        User,
-        on_delete=models.CASCADE,
-        related_name='recipes',
-        verbose_name='Автор'
+    category = models.ForeignKey(
+        Category,
+        on_delete=models.SET_NULL,
+        verbose_name='категория',
+        max_length=30,
+        blank=True,
+        null=True
     )
     name = models.CharField(
-        max_length=200,
-        verbose_name='Название рецепта'
+        max_length=50,
+        verbose_name='Название сервиса'
     )
     image = models.ImageField(
         "Ссылка на изображение",
-        upload_to="recipes/images/",
+        upload_to="services/images/",
         null=True,
         default=None
     )
     text = models.TextField(verbose_name='Текст')
-    ingredients = models.ManyToManyField(
-        Ingredient,
-        through='RecipeIngredient',
-        through_fields=('recipe', 'ingredient'),
-        verbose_name='Ингредиенты'
+    cashback = models.PositiveIntegerField(
+        'Кэшбэк (в процентах)',
+        # validators=[
+        #     MinValueValidator(
+        #         1,
+        #         'Кэшбэк не может быть меньше 1 процента'
+        #     )
+        # ],
     )
-    cooking_time = models.PositiveIntegerField(
-        'Время приготовления (в минутах)',
-        validators=[
-            MinValueValidator(
-                1,
-                'Время приготовления не может быть меньше 1 минуты'
-            )
-        ],
-    )
-    tags = models.ManyToManyField(
-        Tag, related_name='recipes'
-    )
+    new = models.BooleanField(default=True)
+    # new  - в сериализаторе или вью сделать счетчик дней
+    # функция если больше 60 меняется на False
+    popular = models.BooleanField(default=False)
+    # popular  - в сериализаторе или вью сделать счетчик звезд
+    # функция если больше ??? меняется на True
     pub_date = models.DateTimeField(
-        verbose_name='Дата публикации',
+        verbose_name='Дата добавления',
         auto_now_add=True,
         db_index=True
     )
 
-    objects = RecipeQuerySet.as_manager()
+    objects = ServiceQuerySet.as_manager()
 
     class Meta:
         ordering = ('-pub_date',)
-        verbose_name = 'Рецепт'
-        verbose_name_plural = 'Рецепты'
+        verbose_name = 'Сервис'
+        verbose_name_plural = 'Сервисы'
 
     def __str__(self):
         return self.name
 
 
-class TagsInRecipe(models.Model):
-    """Модель тега в рецепте. """
-
-    tag = models.ForeignKey(
-        Tag,
-        on_delete=models.CASCADE,
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('tag', 'recipe'), name='unique_tag_recipe'
-            )
-        ]
-        verbose_name = 'Теги в рецепте'
-        verbose_name_plural = verbose_name
-
-
-class RecipeIngredient(models.Model):
-    """Модель ингредиента в рецепте. """
-
-    amount = models.PositiveIntegerField(
-        verbose_name='Количество'
-    )
-    ingredient = models.ForeignKey(
-        Ingredient,
-        on_delete=models.CASCADE,
-        verbose_name='Ингредиент'
-    )
-    recipe = models.ForeignKey(
-        Recipe,
-        on_delete=models.CASCADE,
-        verbose_name='Рецепт'
-    )
-
-    class Meta:
-        constraints = [
-            models.UniqueConstraint(
-                fields=('ingredient', 'recipe'),
-                name='unique_recipe_ingredient'
-            )
-        ]
-        verbose_name = 'Ингредиент в рецепте'
-        verbose_name_plural = 'Ингредиенты в рецептах'
-
-    def __str__(self):
-        return f'{self.ingredient} в {self.recipe}'
-
-
-class AbstractFavoriteShopping(models.Model):
-    """Абстрактная модель атрибутов для избранного и корзины покупок. """
+class AbstractSubscription(models.Model):
+    """Абстрактная модель атрибутов для подписок (и избранного если будет). """
 
     user = models.ForeignKey(
-        CustomUser,
+        User,
         on_delete=models.CASCADE,
         verbose_name='Пользователь'
     )
-    recipe = models.ForeignKey(
-        Recipe,
+    service = models.ForeignKey(
+        Service,
         null=True,
         default=None,
-        verbose_name='Рецепт',
+        verbose_name='Сервис',
         on_delete=models.CASCADE
     )
 
     class Meta:
         constraints = [
             models.UniqueConstraint(
-                fields=('user', 'recipe'), name='unique_user_recipe_list'
+                fields=('user', 'service'), name='unique_user_service_list'
             )
         ]
         abstract = True
 
 
-class Favorite(AbstractFavoriteShopping):
-    """Модель избранных рецептов. """
+class Subscription(AbstractSubscription):
+    """Модель подписок на сервисы. """
 
     class Meta:
-        default_related_name = 'favorite'
-        verbose_name = 'Объект избранного'
-        verbose_name_plural = 'Объекты избранного'
+        default_related_name = 'subscription'
+        verbose_name = 'Объект подписки'
+        verbose_name_plural = 'Объекты подписки'
 
     def __str__(self):
-        return f'Избранный {self.recipe} у {self.user}'
-
-
-class ShoppingCart(AbstractFavoriteShopping):
-    """Модель списка покупок. """
-
-    class Meta:
-        default_related_name = 'shopping_cart'
-        verbose_name = 'Список покупок'
-        verbose_name_plural = 'Списки покупок'
-
-    def __str__(self):
-        return f'Список покупок пользователя {self.user.username}'
+        return f'Подписка {self.service} активна у {self.user}'
