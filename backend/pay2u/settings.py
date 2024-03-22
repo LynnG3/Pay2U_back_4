@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'djoser',
     'django_filters',
     'rest_framework',
+    'drf_yasg',
     'rest_framework.authtoken',
     'recipes.apps.ServicesConfig',
     'payments.apps.PaymentsConfig',
@@ -60,6 +61,13 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'foodgram.wsgi.application'
+
+DATABASES = {
+    'default': {
+        'ENGINE': 'django.db.backends.sqlite3',
+        'NAME': BASE_DIR / 'db.sqlite3',
+    }
+}
 
 # DATABASES = {
 #     'default': {
@@ -126,16 +134,20 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'data'),)
 
 
-DJOSER = {
-    'LOGIN_FIELD': 'email',
-    'HIDE_USERS': False,
-    'PERMISSIONS': {
-        'user': ("rest_framework.permissions.IsAuthenticated",),
-        'user_list': ['rest_framework.permissions.AllowAny'],
-    },
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserSerializer',
-        'user': 'api.serializers.CustomUserSerializer',
-        'current_user': 'api.serializers.CustomUserSerializer',
-    },
+# DJOSER = {
+#     'LOGIN_FIELD': 'email',
+#     'HIDE_USERS': False,
+#     'PERMISSIONS': {
+#         'user': ("rest_framework.permissions.IsAuthenticated",),
+#         'user_list': ['rest_framework.permissions.AllowAny'],
+#     },
+#     'SERIALIZERS': {
+#         'user_create': 'api.serializers.CustomUserSerializer',
+#         'user': 'api.serializers.CustomUserSerializer',
+#         'current_user': 'api.serializers.CustomUserSerializer',
+#     },
+# }
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
 }
