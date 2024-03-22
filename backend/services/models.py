@@ -1,9 +1,10 @@
 from typing import Optional
 
 from django.contrib.auth import get_user_model
-from django.core.validators import MinValueValidator
+# from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Exists, OuterRef
+from django.forms import MultiValueField, CharField, MultiWidget, TextInput
 
 # from users.models import CustomUser
 
@@ -65,14 +66,11 @@ class Service(models.Model):
         default=None
     )
     text = models.TextField(verbose_name='Текст')
+    cost = models.PositiveIntegerField(
+        'Стоимость подписки',
+    )
     cashback = models.PositiveIntegerField(
         'Кэшбэк (в процентах)',
-        # validators=[
-        #     MinValueValidator(
-        #         1,
-        #         'Кэшбэк не может быть меньше 1 процента'
-        #     )
-        # ],
     )
     new = models.BooleanField(default=True)
     # new  - в сериализаторе или вью сделать счетчик дней
@@ -85,6 +83,7 @@ class Service(models.Model):
         auto_now_add=True,
         db_index=True
     )
+    # rating = какой тип поля? КАК ЕГО СЧИТАТЬ?
 
     objects = ServiceQuerySet.as_manager()
 
@@ -122,8 +121,65 @@ class AbstractSubscription(models.Model):
         abstract = True
 
 
+class PhoneWidget(MultiWidget):
+    """Виджет для удобного заполнения телефонного номера. """
+
+    def __init__(self, code_length=3, num_length=7, attrs=None):
+        widgets = [TextInput(attrs={'size': code_length, 'maxlength': code_length}),
+                   TextInput(attrs={'size': num_length, 'maxlength': num_length})]
+        super(PhoneWidget, self).__init__(widgets, attrs)
+
+    def decompress(self, value):
+        if value:
+            return [value.code, value.number]
+        else:
+            return ['', '']
+
+
+class PhoneField(MultiValueField):
+    """Класс поля для ввода телефонного номера. """
+
+    def __init__(self, code_length, num_length, *args, **kwargs):
+        list_fields = [CharField(),
+                       CharField()]
+        super(PhoneField, self).__init__(
+            list_fields, widget=PhoneWidget(
+                code_length, num_length
+            ), *args, **kwargs
+        )
+
+    def compress(self, values):
+        return '+7' + values[0] + values[1]
+
+
 class Subscription(AbstractSubscription):
     """Модель подписок на сервисы. """
+
+    date_start = models.DateTimeField(
+        verbose_name='Дата активации',
+        auto_now_add=True,
+        db_index=True
+    )
+    date_stop = models.DateTimeField(
+        verbose_name='Действует до',
+        db_index=True
+    )
+    # поле телефон и виджет имеет смысл перенести в модель юзера в приложение users?
+    phone = PhoneField()
+    # поле цена уже должно быть в модели сервиса, надо ли повторять?
+    # cost=models.PositiveIntegerField(
+    #     'Стоимость подписки',
+    # )
+    tariff_description = models.TextField(verbose_name='Описание тарифа')
+    # cart_details = может это в приложение payments ?
+    # card_number = может это в приложение payments ?
+    # rules=
+    # status = активна/неактивна/в ожидании активации
+    # поле категория уже должно быть в модели сервиса, надо ли повторять?
+    # category = 
+    # поле рейтинг уже должно быть в модели сервиса, надо ли повторять?
+    # rating =
+    # autorun = может это в приложение payments ?
 
     class Meta:
         default_related_name = 'subscription'

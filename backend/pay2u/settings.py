@@ -24,6 +24,7 @@ INSTALLED_APPS = [
     'djoser',
     'django_filters',
     'rest_framework',
+    'drf_yasg',
     'rest_framework.authtoken',
     'recipes.apps.ServicesConfig',
     'payments.apps.PaymentsConfig',
@@ -138,4 +139,8 @@ DJOSER = {
         'user': 'api.serializers.CustomUserSerializer',
         'current_user': 'api.serializers.CustomUserSerializer',
     },
+}
+
+SWAGGER_SETTINGS = {
+    'USE_SESSION_AUTH': False,
 }
