@@ -121,9 +121,9 @@ class ServiceViewSet(ReadOnlyModelViewSet):
     Обрабатывает запросы к /api/services/ и /api/services/{id}/"""
 
     queryset = Service.objects.all()
-    permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly]
     # pagination_class = CommonPagination
-    filterset_class = ServicesFilter
+    # filterset_class = ServicesFilter
     serializer_class = ServiceSerializer
 
 

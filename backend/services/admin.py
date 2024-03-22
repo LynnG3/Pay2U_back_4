@@ -3,7 +3,6 @@ from django.contrib import admin
 from .models import Category, Service
 
 
-
 @admin.register(Category)
 class CategoryAdmin(admin.ModelAdmin):
     """ Администрирование категорий. """

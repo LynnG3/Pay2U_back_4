@@ -125,8 +125,14 @@ class PhoneWidget(MultiWidget):
     """Виджет для удобного заполнения телефонного номера. """
 
     def __init__(self, code_length=3, num_length=7, attrs=None):
-        widgets = [TextInput(attrs={'size': code_length, 'maxlength': code_length}),
-                   TextInput(attrs={'size': num_length, 'maxlength': num_length})]
+        widgets = [
+            TextInput(
+                attrs={'size': code_length, 'maxlength': code_length}
+            ),
+            TextInput(
+                attrs={'size': num_length, 'maxlength': num_length}
+            )
+        ]
         super(PhoneWidget, self).__init__(widgets, attrs)
 
     def decompress(self, value):
@@ -164,7 +170,8 @@ class Subscription(AbstractSubscription):
         verbose_name='Действует до',
         db_index=True
     )
-    # поле телефон и виджет имеет смысл перенести в модель юзера в приложение users?
+    # поле телефон и виджет имеет смысл перенести в модель юзера
+    # в приложение users?
     phone = PhoneField()
     # поле цена уже должно быть в модели сервиса, надо ли повторять?
     # cost=models.PositiveIntegerField(
@@ -176,7 +183,7 @@ class Subscription(AbstractSubscription):
     # rules=
     # status = активна/неактивна/в ожидании активации
     # поле категория уже должно быть в модели сервиса, надо ли повторять?
-    # category = 
+    # category =
     # поле рейтинг уже должно быть в модели сервиса, надо ли повторять?
     # rating =
     # autorun = может это в приложение payments ?
