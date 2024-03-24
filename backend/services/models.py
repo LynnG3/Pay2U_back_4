@@ -3,8 +3,12 @@ from typing import Optional
 from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
 from django.db import models
+from django.contrib.auth.models import User
 from django.db.models import Exists, OuterRef
-from django.forms import MultiValueField, CharField, MultiWidget, TextInput
+# from django.forms import MultiValueField, CharField, MultiWidget, TextInput
+from django.dispatch import receiver
+from django.db.models.signals import post_save
+from django.db.models import UniqueConstraint
 
 # from users.models import CustomUser
 
@@ -96,102 +100,130 @@ class Service(models.Model):
         return self.name
 
 
-class AbstractSubscription(models.Model):
-    """Абстрактная модель атрибутов для подписок (и избранного если будет). """
+# class AbstractSubscription(models.Model):
+#     """Абстрактная модель атрибутов для подписок (и избр если будет). """
 
+#     user = models.ForeignKey(
+#         User,
+#         on_delete=models.CASCADE,
+#         verbose_name='Пользователь'
+#     )
+#     service = models.ForeignKey(
+#         Service,
+#         null=True,
+#         default=None,
+#         verbose_name='Сервис',
+#         on_delete=models.CASCADE
+#     )
+
+#     class Meta:
+#         constraints = [
+#             models.UniqueConstraint(
+#                 fields=('user', 'service'), name='unique_user_service_list'
+#             )
+#         ]
+#         abstract = True
+
+
+# class PhoneWidget(MultiWidget):
+#     """Виджет для удобного заполнения телефонного номера. """
+
+#     def __init__(self, code_length=3, num_length=7, attrs=None):
+#         widgets = [
+#             TextInput(
+#                 attrs={'size': code_length, 'maxlength': code_length}
+#             ),
+#             TextInput(
+#                 attrs={'size': num_length, 'maxlength': num_length}
+#             )
+#         ]
+#         super(PhoneWidget, self).__init__(widgets, attrs)
+
+#     def decompress(self, value):
+#         if value:
+#             return [value.code, value.number]
+#         else:
+#             return ['', '']
+
+
+# class PhoneField(MultiValueField):
+#     """Класс поля для ввода телефонного номера. """
+
+#     def __init__(self, code_length, num_length, *args, **kwargs):
+#         list_fields = [CharField(),
+#                        CharField()]
+#         super(PhoneField, self).__init__(
+#             list_fields, widget=PhoneWidget(
+#                 code_length, num_length
+#             ), *args, **kwargs
+#         )
+
+#     def compress(self, values):
+#         return '+7' + values[0] + values[1]
+
+
+# class Subscription(AbstractSubscription):
+#     """Модель подписок на сервисы. """
+
+#     date_start = models.DateTimeField(
+#         verbose_name='Дата активации',
+#         auto_now_add=True,
+#         db_index=True
+#     )
+#     date_stop = models.DateTimeField(
+#         verbose_name='Действует до',
+#         db_index=True
+#     )
+#     # поле телефон и виджет имеет смысл перенести в модель юзера
+#     # в приложение users?
+#     phone = PhoneField()
+#     # поле цена уже должно быть в модели сервиса, надо ли повторять?
+#     # cost=models.PositiveIntegerField(
+#     #     'Стоимость подписки',
+#     # )
+#     tariff_description = models.TextField(verbose_name='Описание тарифа')
+#     # cart_details = может это в приложение payments ?
+#     # card_number = может это в приложение payments ?
+#     # rules=
+#     # status = активна/неактивна/в ожидании активации
+#     # поле категория уже должно быть в модели сервиса, надо ли повторять?
+#     # category =
+#     # поле рейтинг уже должно быть в модели сервиса, надо ли повторять?
+#     # rating =
+#     # autorun = может это в приложение payments ?
+
+#     class Meta:
+#         default_related_name = 'subscription'
+#         verbose_name = 'Объект подписки'
+#         verbose_name_plural = 'Объекты подписки'
+
+#     def __str__(self):
+#         return f'Подписка {self.service} активна у {self.user}'
+
+
+class Subscription(models.Model):
     user = models.ForeignKey(
         User,
-        on_delete=models.CASCADE,
-        verbose_name='Пользователь'
+        related_name='subscriptions',
+        on_delete=models.CASCADE
     )
     service = models.ForeignKey(
         Service,
-        null=True,
-        default=None,
-        verbose_name='Сервис',
+        related_name='subscriptions',
         on_delete=models.CASCADE
     )
+    subscribed_date = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         constraints = [
-            models.UniqueConstraint(
-                fields=('user', 'service'), name='unique_user_service_list'
+            UniqueConstraint(
+                fields=['user', 'service'], name='unique_subscription'
             )
         ]
-        abstract = True
 
 
-class PhoneWidget(MultiWidget):
-    """Виджет для удобного заполнения телефонного номера. """
-
-    def __init__(self, code_length=3, num_length=7, attrs=None):
-        widgets = [
-            TextInput(
-                attrs={'size': code_length, 'maxlength': code_length}
-            ),
-            TextInput(
-                attrs={'size': num_length, 'maxlength': num_length}
-            )
-        ]
-        super(PhoneWidget, self).__init__(widgets, attrs)
-
-    def decompress(self, value):
-        if value:
-            return [value.code, value.number]
-        else:
-            return ['', '']
-
-
-class PhoneField(MultiValueField):
-    """Класс поля для ввода телефонного номера. """
-
-    def __init__(self, code_length, num_length, *args, **kwargs):
-        list_fields = [CharField(),
-                       CharField()]
-        super(PhoneField, self).__init__(
-            list_fields, widget=PhoneWidget(
-                code_length, num_length
-            ), *args, **kwargs
-        )
-
-    def compress(self, values):
-        return '+7' + values[0] + values[1]
-
-
-class Subscription(AbstractSubscription):
-    """Модель подписок на сервисы. """
-
-    date_start = models.DateTimeField(
-        verbose_name='Дата активации',
-        auto_now_add=True,
-        db_index=True
-    )
-    date_stop = models.DateTimeField(
-        verbose_name='Действует до',
-        db_index=True
-    )
-    # поле телефон и виджет имеет смысл перенести в модель юзера
-    # в приложение users?
-    phone = PhoneField()
-    # поле цена уже должно быть в модели сервиса, надо ли повторять?
-    # cost=models.PositiveIntegerField(
-    #     'Стоимость подписки',
-    # )
-    tariff_description = models.TextField(verbose_name='Описание тарифа')
-    # cart_details = может это в приложение payments ?
-    # card_number = может это в приложение payments ?
-    # rules=
-    # status = активна/неактивна/в ожидании активации
-    # поле категория уже должно быть в модели сервиса, надо ли повторять?
-    # category =
-    # поле рейтинг уже должно быть в модели сервиса, надо ли повторять?
-    # rating =
-    # autorun = может это в приложение payments ?
-
-    class Meta:
-        default_related_name = 'subscription'
-        verbose_name = 'Объект подписки'
-        verbose_name_plural = 'Объекты подписки'
-
-    def __str__(self):
-        return f'Подписка {self.service} активна у {self.user}'
+@receiver(post_save, sender=Subscription)
+def update_user_subscriptions_count(sender, instance, **kwargs):
+    user = instance.user
+    user.subscriptions_count = user.subscriptions.count()
+    user.save()

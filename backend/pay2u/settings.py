@@ -10,7 +10,8 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure123456')
 
-DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+# DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
+DEBUG = True
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split()
 
@@ -26,7 +27,7 @@ INSTALLED_APPS = [
     'rest_framework',
     'drf_yasg',
     'rest_framework.authtoken',
-    'recipes.apps.ServicesConfig',
+    'services.apps.ServicesConfig',
     'payments.apps.PaymentsConfig',
     'api.apps.ApiConfig',
     'users.apps.UsersConfig',
@@ -60,7 +61,7 @@ TEMPLATES = [
     },
 ]
 
-WSGI_APPLICATION = 'foodgram.wsgi.application'
+WSGI_APPLICATION = 'pay2u.wsgi.application'
 
 DATABASES = {
     'default': {
@@ -134,19 +135,19 @@ STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
 STATICFILES_DIRS = (os.path.join(BASE_DIR, 'data'),)
 
 
-# DJOSER = {
-#     'LOGIN_FIELD': 'email',
-#     'HIDE_USERS': False,
-#     'PERMISSIONS': {
-#         'user': ("rest_framework.permissions.IsAuthenticated",),
-#         'user_list': ['rest_framework.permissions.AllowAny'],
-#     },
-#     'SERIALIZERS': {
-#         'user_create': 'api.serializers.CustomUserSerializer',
-#         'user': 'api.serializers.CustomUserSerializer',
-#         'current_user': 'api.serializers.CustomUserSerializer',
-#     },
-# }
+DJOSER = {
+    'LOGIN_FIELD': 'email',
+    'HIDE_USERS': False,
+    'PERMISSIONS': {
+        'user': ("rest_framework.permissions.IsAuthenticated",),
+        'user_list': ['rest_framework.permissions.AllowAny'],
+    },
+    'SERIALIZERS': {
+        'user_create': 'api.serializers.CustomUserSerializer',
+        'user': 'api.serializers.CustomUserSerializer',
+        'current_user': 'api.serializers.CustomUserSerializer',
+    },
+}
 
 SWAGGER_SETTINGS = {
     'USE_SESSION_AUTH': False,

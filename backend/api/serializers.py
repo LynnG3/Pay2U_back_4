@@ -1,12 +1,13 @@
-'''Сериализатор для приложений recipes и users. '''
-import re
-
-from djoser.serializers import UserCreateSerializer, UserSerializer
+'''Сериализатор для приложений services, payments и users. '''
+# import re
+# from django.contrib.auth.models import User
+# from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from rest_framework.authtoken.models import Token
-from rest_framework.serializers import SerializerMethodField, ValidationError
-from rest_framework.validators import UniqueTogetherValidator
+# from rest_framework.authtoken.models import Token
+# from rest_framework.serializers import SerializerMethodField, ValidationError
+# from rest_framework.validators import UniqueTogetherValidator
+# from django.db.models import UniqueConstraint
 
 from services.models import Category, Service, Subscription
 # from users.models import CustomUser
@@ -93,7 +94,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = '__all__'
+        fields = ('id', 'title', 'slug')
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -136,32 +137,38 @@ class NewPopularSerializer(serializers.ModelSerializer):
 #     class Meta:
 
 
+# class SubscriptionSerializer(serializers.ModelSerializer):
+#     """Сериализатор подписок. """
+
+#     service = serializers.PrimaryKeyRelatedField(
+#         queryset=Service.objects.all()
+#     )
+#     user = serializers.PrimaryKeyRelatedField(
+#         queryset=User.objects.all()
+#     )
+
+#     class Meta:
+#         model = Subscription
+#         fields = ('user', 'service')
+#         validators = (
+#             UniqueTogetherValidator(
+#                 queryset=Subscription.objects.all(),
+#                 fields=('user', 'service'),
+#                 message='Вы подписаны на этот сервис. '
+#             ),
+#         )
+
+#     def to_representation(self, instance):
+#         """Определяет сериализатор для чтения."""
+#         service_instance = instance.service
+#         return SubscriptionSerializer(
+#             service_instance,
+#             context={'request':
+#                      self.context['request']}
+#         ).data
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """Сериализатор подписок. """
-
-    service = serializers.PrimaryKeyRelatedField(
-        queryset=Service.objects.all()
-    )
-    user = serializers.PrimaryKeyRelatedField(
-        queryset=User.objects.all()
-    )
-
     class Meta:
         model = Subscription
-        fields = ('user', 'service')
-        validators = (
-            UniqueTogetherValidator(
-                queryset=Subscription.objects.all(),
-                fields=('user', 'service'),
-                message='Вы подписаны на этот сервис. '
-            ),
-        )
-
-    def to_representation(self, instance):
-        """Определяет сериализатор для чтения."""
-        service_instance = instance.service
-        return SubscriptionReadSerializer(
-            service_instance,
-            context={'request':
-                     self.context['request']}
-        ).data
+        fields = '__all__'
