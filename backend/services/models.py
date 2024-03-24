@@ -1,4 +1,5 @@
 from typing import Optional
+import datetime
 from django.core.validators import MaxValueValidator, MinValueValidator
 
 from django.contrib.auth import get_user_model
@@ -81,14 +82,13 @@ class Service(models.Model):
     # new  - в сериализаторе или вью сделать счетчик дней
     # функция если больше 60 меняется на False
     popular = models.BooleanField(default=False)
-    # popular  - в сериализаторе или вью сделать счетчик звезд
+    # popular  - в сериализаторе или вью сделать счетчик подписчиков
     # функция если больше ??? меняется на True
     pub_date = models.DateTimeField(
         verbose_name='Дата добавления',
         auto_now_add=True,
         db_index=True
     )
-    # rating = какой тип поля? КАК ЕГО СЧИТАТЬ?
 
     objects = ServiceQuerySet.as_manager()
 
@@ -99,6 +99,19 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
+
+    def is_new(self):
+        """Функция-счетчик для определения, является ли сервис новым."""
+        today = datetime.date.today()
+        delta_days = (today - self.pub_date.date()).days
+        if delta_days <= 60:
+            return True
+        else:
+            return False
+
+    @property
+    def new(self):
+        return self.is_new()
 
     @property
     def average_rating(self):
