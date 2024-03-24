@@ -9,7 +9,7 @@ from rest_framework import serializers
 # from rest_framework.validators import UniqueTogetherValidator
 # from django.db.models import UniqueConstraint
 
-from services.models import Category, Service, Subscription
+from services.models import Category, Rating, Service, Subscription
 # from users.models import CustomUser
 
 
@@ -171,4 +171,10 @@ class NewPopularSerializer(serializers.ModelSerializer):
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
+        fields = '__all__'
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
         fields = '__all__'

@@ -1,4 +1,5 @@
 from typing import Optional
+from django.core.validators import MaxValueValidator, MinValueValidator
 
 from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
@@ -98,6 +99,14 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
+
+    @property
+    def average_rating(self):
+        ratings = Rating.objects.filter(service=self)
+        total_ratings = sum([rating.stars for rating in ratings])
+        if ratings:
+            return total_ratings / len(ratings)
+        return 0
 
 
 # class AbstractSubscription(models.Model):
@@ -202,6 +211,8 @@ class Service(models.Model):
 
 
 class Subscription(models.Model):
+    """Модель подписки юзера на сервисы. """
+
     user = models.ForeignKey(
         User,
         related_name='subscriptions',
@@ -227,3 +238,23 @@ def update_user_subscriptions_count(sender, instance, **kwargs):
     user = instance.user
     user.subscriptions_count = user.subscriptions.count()
     user.save()
+
+
+class Rating(models.Model):
+    """Модель рейтинга сервиса. """
+
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE
+    )
+    service = models.ForeignKey(
+        Service,
+        on_delete=models.CASCADE
+    )
+    stars = models.IntegerField(
+        choices=[(1, '1 star'),
+                 (2, '2 stars'),
+                 (3, '3 stars'),
+                 (4, '4 stars'),
+                 (5, '5 stars')]
+    )

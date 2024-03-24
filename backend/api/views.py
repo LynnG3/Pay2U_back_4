@@ -8,18 +8,17 @@ from rest_framework import viewsets
 from rest_framework.response import Response
 from rest_framework.decorators import action
 # from rest_framework.pagination import PageNumberPagination
-# from rest_framework.permissions import (AllowAny,
-#                                         IsAuthenticated,
-#                                         IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 # from api.filters import ServicesFilter
-# from api.permissions import IsOwnerOrReadOnly
+from api.permissions import IsOwnerOrReadOnly
 from api.serializers import (ServiceSerializer,
                              SubscriptionSerializer,
-                             CategorySerializer
+                             CategorySerializer,
+                             RatingSerializer
                             #  CustomUserGetSerializer, CustomUserSerializer
                              )
-from services.models import Service, Category, Subscription
+from services.models import Service, Category, Rating, Subscription
 from users.models import Subscription
 # from django.contrib.auth.models import User
 # from payments.models import AutoPayment, Tarif, SellHistory
@@ -173,5 +172,35 @@ class SubscriptionViewSet(viewsets.ViewSet):
         except Subscription.DoesNotExist:
             return Response(
                 {'message': 'Subscription not found'},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    serializer_class = RatingSerializer
+    queryset = Rating.objects.all()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAuthenticated()]
+        return [IsOwnerOrReadOnly()]
+
+    @action(detail=False, methods=['put'])
+    def update_rating(self, request):
+        data = request.data
+        try:
+            rating = Rating.objects.get(
+                user=request.user,
+                service=data['service']
+            )
+            rating.stars = data['stars']
+            rating.save()
+            return Response(
+                {'message': 'Rating updated successfully'},
+                status=status.HTTP_200_OK
+            )
+        except Rating.DoesNotExist:
+            return Response(
+                {'error': 'Rating does not exist'},
                 status=status.HTTP_404_NOT_FOUND
             )
