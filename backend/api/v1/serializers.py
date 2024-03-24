@@ -1,45 +1,67 @@
 '''Сериализатор для приложений services, payments и users. '''
-# import re
-# from django.contrib.auth.models import User
-# from djoser.serializers import UserCreateSerializer, UserSerializer
+
+from tokenize import Token
+
+from django.contrib.auth import get_user_model
+from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-# from rest_framework.authtoken.models import Token
+from services.models import Category, Service, Subscription
+
+from rest_framework.authtoken.models import Token
+
 # from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
 # from django.db.models import UniqueConstraint
-
-from services.models import Category, Rating, Service, Subscription
-# from users.models import CustomUser
+User = get_user_model()
 
 
-# class CustomUserSerializer(UserCreateSerializer):
-#     """Сериализатор создания/редактирования/удаления пользователя. """
+class CustomUserSerializer(UserSerializer):
+    """Сериализатор для кастомной модели пользователя."""
 
-#     email = serializers.EmailField()
-#     username = serializers.CharField(required=True, max_length=150)
-#     first_name = serializers.CharField(required=True, max_length=150)
-#     last_name = serializers.CharField(required=True, max_length=150)
 
-#     class Meta:
-#         model = CustomUser
-#         fields = (
-#             'id',
-#             'username',
-#             'email',
-#             'first_name',
-#             'last_name',
-#             'password',
-#         )
+class Meta:
+    model = User
+    fields = (
+        'id',
+        'phone_number',
+        'username',
+        'first_name',
+        'last_name',
+        'surname',
+        'email',
+    )
 
-#     def validate_username(self, username):
 
-#         pattern = r'^[\w.@+-]+\Z'
-#         if not re.match(pattern, username):
-#             raise serializers.ValidationError(
-#                 'Имя пользователя содержит недопустимый символ.'
-#             )
-#         return username
+class CreateCustomUserSerializer(UserCreateSerializer):
+    """Сериализатор для создания кастомной модели пользователя."""
+
+    class Meta:
+        model = User
+        fields = (
+            'email',
+            'phone_number',
+            'id',
+            'username',
+            'first_name',
+            'last_name',
+            'surname',
+            'password',
+        )
+        extra_kwargs = {
+            'password': {'write_only': True},
+            'email': {'required': True},
+            'phone_number': {'required': True},
+            'first_name': {'required': True},
+            'last_name': {'required': True},
+            'surname': {'required': True},
+        }
+
+
+class TokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Token
+        fields = ('key',)
 
 
 # class SubscriptionMixin:
@@ -90,7 +112,7 @@ from services.models import Category, Rating, Service, Subscription
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    """Сериализатор категории. """
+    """Сериализатор категории."""
 
     class Meta:
         model = Category
@@ -117,7 +139,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 class NewPopularSerializer(serializers.ModelSerializer):
     """Cериализатор чтения сервисов
-    для новинок и популярного. """
+    для новинок и популярного."""
 
     image = Base64ImageField()
 
@@ -132,7 +154,7 @@ class NewPopularSerializer(serializers.ModelSerializer):
 
 #     is_subscribed = SerializerMethodField()
 #     services = serializers.SerializerMethodField()
-    
+
 
 #     class Meta:
 
@@ -171,10 +193,4 @@ class NewPopularSerializer(serializers.ModelSerializer):
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
-        fields = '__all__'
-
-
-class RatingSerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Rating
         fields = '__all__'

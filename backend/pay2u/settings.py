@@ -1,37 +1,44 @@
 import os
 from pathlib import Path
 
+from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
 
 load_dotenv()
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure123456')
+SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
-# DEBUG = os.getenv('DEBUG', 'False').lower() == 'true'
-DEBUG = True
+DEBUG = os.getenv('DEBUG', '').lower() == 'true'
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split()
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost, 127.0.0.1').split(', ')
 
-INSTALLED_APPS = [
+DJANGO_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+]
+
+THIRD_PARTY_APPS = [
+    'rest_framework',
+    'rest_framework.authtoken',
     'djoser',
     'django_filters',
-    'rest_framework',
-    'drf_yasg',
-    'rest_framework.authtoken',
+    'drf_spectacular',
+]
+
+LOCAL_APPS = [
     'services.apps.ServicesConfig',
     'payments.apps.PaymentsConfig',
-    'api.apps.ApiConfig',
     'users.apps.UsersConfig',
 ]
+
+INSTALLED_APPS = DJANGO_APPS + THIRD_PARTY_APPS + LOCAL_APPS
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
@@ -63,23 +70,24 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'pay2u.wsgi.application'
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.sqlite3',
-        'NAME': BASE_DIR / 'db.sqlite3',
+if os.getenv('DEBUG') == 'True' or 'true':
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': os.path.join(BASE_DIR, 'db.sqlite3'),
+        }
     }
-}
-
-# DATABASES = {
-#     'default': {
-#         'ENGINE': 'django.db.backends.postgresql',
-#         'NAME': os.getenv('POSTGRES_DB', '/backend/db.sqlite3'),
-#         'USER': os.getenv('POSTGRES_USER', 'db_user'),
-#         'PASSWORD': os.getenv('POSTGRES_PASSWORD', '12345'),
-#         'HOST': os.getenv('DB_HOST', 'localhost'),
-#         'PORT': os.getenv('DB_PORT', 5432)
-#     }
-# }
+else:
+    DATABASE = {
+        'dafault': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB', 'pay2u_db'),
+            'USER': os.getenv('POSTGRES_USER', 'pay2u_admin'),
+            'PASSWORD': os.getenv('POSTFRES_PASSWORD', 'secret_password'),
+            'HOST': os.getenv('DB_HOST', ''),
+            'PORT': os.getenv('DB_PORT', 5432),
+        }
+    }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
@@ -96,59 +104,70 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+LANGUAGE_CODE = 'ru-RU'
 
-LANGUAGE_CODE = 'ru-ru'
-
-TIME_ZONE = 'UTC'
-
+TIME_ZONE = 'Europe/Moscow'
 USE_I18N = True
-
 USE_L10N = True
-
 USE_TZ = True
 
-
-AUTH_USER_MODEL = 'users.CustomUser'
-
-
-REST_FRAMEWORK = {
-    "DEFAULT_AUTHENTICATION_CLASSES": [
-        "rest_framework.authentication.TokenAuthentication",
-    ],
-    "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
-    ],
-    "DEFAULT_FILTER_BACKENDS":
-        ["django_filters.rest_framework.DjangoFilterBackend"],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
-    'PAGE_SIZE': 6,
-}
-
 MEDIA_URL = '/media/'
-
 MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 STATIC_URL = '/static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static')
 
-STATIC_ROOT = os.path.join(BASE_DIR, 'collected_static')
+AUTH_USER_MODEL = 'users.CustomUser'
 
-STATICFILES_DIRS = (os.path.join(BASE_DIR, 'data'),)
-
+REST_FRAMEWORK = {
+    "DEFAULT_PERMISSION_CLASSES": [
+        "rest_framework.permissions.AllowAny",
+    ],
+    "DEFAULT_AUTHENTICATION_CLASSES": [
+        "rest_framework.authentication.TokenAuthentication",
+    ],
+    "DEFAULT_FILTER_BACKENDS": [
+        "django_filters.rest_framework.DjangoFilterBackend",
+    ],
+    "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
+}
 
 DJOSER = {
     'LOGIN_FIELD': 'email',
     'HIDE_USERS': False,
     'PERMISSIONS': {
-        'user': ("rest_framework.permissions.IsAuthenticated",),
-        'user_list': ['rest_framework.permissions.AllowAny'],
+        'user': [
+            'api.v1.permissions.IsOwnerOrReadOnly',
+        ],
+        'user_list': [
+            'rest_framework.permissions.AllowAny',
+        ],
     },
-    'SERIALIZERS': {
-        'user_create': 'api.serializers.CustomUserSerializer',
-        'user': 'api.serializers.CustomUserSerializer',
-        'current_user': 'api.serializers.CustomUserSerializer',
+    "SERIALIZERS": {
+        "current_user": "api.v1.serializers.CustomUserSerializer",
+        "user": "api.v1.serializers.CustomUserSerializer",
+        "user_create": "api.v1.serializers.CreateCustomUserSerializer",
     },
 }
 
-SWAGGER_SETTINGS = {
-    'USE_SESSION_AUTH': False,
+# Для дополнительной фиксации, что подписка активирована и тд
+EMAIL_HOST = os.getenv("EMAIL_HOST", default="localhost")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", default="")
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+
+
+SPECTACULAR_SETTINGS = {
+    "TITLE": "Pay2U",
+    "DESCRIPTION": "Pay2U - это веб-приложение, управления подписками, собранными в одном месте.",
+    "VERSION": "1.0.0",
+    "SERVE_INCLUDE_SCHEMA": False,
+    "SWAGGER_UI_SETTINGS": {
+        "filter": True,
+    },
+    "COMPONENT_SPLIT_REQUEST": True,
 }
+
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:3000",
+]
