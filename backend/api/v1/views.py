@@ -7,6 +7,7 @@
 from api.v1.serializers import (  # CustomUserGetSerializer, CustomUserSerializer
     CategorySerializer,
     CustomUserSerializer,
+    RatingSerializer,
     ServiceSerializer,
     SubscriptionSerializer,
 )
@@ -111,4 +112,34 @@ class SubscriptionViewSet(viewsets.ViewSet):
             return Response(
                 {'message': 'Subscription not found'},
                 status=status.HTTP_404_NOT_FOUND,
+            )
+
+
+class RatingViewSet(viewsets.ModelViewSet):
+    serializer_class = RatingSerializer
+    queryset = Rating.objects.all()
+
+    def get_permissions(self):
+        if self.action == 'create':
+            return [IsAuthenticated()]
+        return [IsOwnerOrReadOnly()]
+
+    @action(detail=False, methods=['put'])
+    def update_rating(self, request):
+        data = request.data
+        try:
+            rating = Rating.objects.get(
+                user=request.user,
+                service=data['service']
+            )
+            rating.stars = data['stars']
+            rating.save()
+            return Response(
+                {'message': 'Rating updated successfully'},
+                status=status.HTTP_200_OK
+            )
+        except Rating.DoesNotExist:
+            return Response(
+                {'error': 'Rating does not exist'},
+                status=status.HTTP_404_NOT_FOUND
             )

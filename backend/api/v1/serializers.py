@@ -6,7 +6,7 @@ from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from services.models import Category, Service, Subscription
+from services.models import Category, Rating, Service, Subscription
 
 from rest_framework.authtoken.models import Token
 
@@ -149,48 +149,13 @@ class NewPopularSerializer(serializers.ModelSerializer):
         read_only_fields = ('id', 'name', 'image')
 
 
-# class SubscriptionReadSerializer(serializers.ModelSerializer):
-#     """Сериализатор просмотра подписок текущего пользователя. """
-
-#     is_subscribed = SerializerMethodField()
-#     services = serializers.SerializerMethodField()
-
-
-#     class Meta:
-
-
-# class SubscriptionSerializer(serializers.ModelSerializer):
-#     """Сериализатор подписок. """
-
-#     service = serializers.PrimaryKeyRelatedField(
-#         queryset=Service.objects.all()
-#     )
-#     user = serializers.PrimaryKeyRelatedField(
-#         queryset=User.objects.all()
-#     )
-
-#     class Meta:
-#         model = Subscription
-#         fields = ('user', 'service')
-#         validators = (
-#             UniqueTogetherValidator(
-#                 queryset=Subscription.objects.all(),
-#                 fields=('user', 'service'),
-#                 message='Вы подписаны на этот сервис. '
-#             ),
-#         )
-
-#     def to_representation(self, instance):
-#         """Определяет сериализатор для чтения."""
-#         service_instance = instance.service
-#         return SubscriptionSerializer(
-#             service_instance,
-#             context={'request':
-#                      self.context['request']}
-#         ).data
-
-
 class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
+        fields = '__all__'
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
         fields = '__all__'
