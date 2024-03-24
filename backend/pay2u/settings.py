@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 
-BASE_DIR = Path(__file__).resolve().parent.parent
+BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.getenv('SECRET_KEY', get_random_secret_key())
 
@@ -29,14 +29,12 @@ THIRD_PARTY_APPS = [
     'rest_framework.authtoken',
     'djoser',
     'django_filters',
-    'drf_yasg',
     'drf_spectacular',
 ]
 
 LOCAL_APPS = [
     'services.apps.ServicesConfig',
     'payments.apps.PaymentsConfig',
-    'api.apps.ApiConfig',
     'users.apps.UsersConfig',
 ]
 
@@ -123,7 +121,7 @@ AUTH_USER_MODEL = 'users.CustomUser'
 
 REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
-        "rest_framework.permissions.IsAuthenticatedOrReadOnly",
+        "rest_framework.permissions.AllowAny",
     ],
     "DEFAULT_AUTHENTICATION_CLASSES": [
         "rest_framework.authentication.TokenAuthentication",
@@ -135,25 +133,20 @@ REST_FRAMEWORK = {
 }
 
 DJOSER = {
-    "LOGIN_FIELD": "username",
-    "HIDE_USERS": False,
-    "PERMISSIONS": {
-        "user_list": ["rest_framework.permissions.IsAuthenticated"],
+    'LOGIN_FIELD': 'email',
+    'HIDE_USERS': False,
+    'PERMISSIONS': {
+        'user': [
+            'api.v1.permissions.IsOwnerOrReadOnly',
+        ],
+        'user_list': [
+            'rest_framework.permissions.AllowAny',
+        ],
     },
-    "USER_CREATE_PASSWORD_RETYPE": True,
-    "AUTO_ACTIVATE_NEW_USERS": True,
     "SERIALIZERS": {
-        "current_user": "api.v1.users.serializers.CustomUserSerializer",
-        "user": "api.v1.users.serializers.CustomUserSerializer",
-        "user_create_password_retype": "api.v1.users.serializers.CustomUserCreateSerializer",
-    },
-    "SEND_ACTIVATION_EMAIL": False,
-    "SEND_CONFIRMATION_EMAIL": True,
-    "ACTIVATION_URL": "#/login/{token}",
-    "PASSWORD_RESET_SHOW_EMAIL_NOT_FOUND": True,
-    "EMAIL": {
-        "confirmation": "api.v1.users.emails.RegistrationConfirmEmail",
-        "password_reset": "api.v1.users.emails.PasswordResetEmail",
+        "current_user": "api.v1.serializers.CustomUserSerializer",
+        "user": "api.v1.serializers.CustomUserSerializer",
+        "user_create": "api.v1.serializers.CreateCustomUserSerializer",
     },
 }
 
@@ -166,7 +159,7 @@ EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
 SPECTACULAR_SETTINGS = {
     "TITLE": "Pay2U",
-    "DESCRIPTION": "Pay2U - это веб-приложение, управления подписками, собранными в одном месте."
+    "DESCRIPTION": "Pay2U - это веб-приложение, управления подписками, собранными в одном месте.",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
     "SWAGGER_UI_SETTINGS": {
