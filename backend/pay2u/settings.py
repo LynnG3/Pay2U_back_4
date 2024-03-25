@@ -138,7 +138,7 @@ DJOSER = {
     'HIDE_USERS': False,
     'PERMISSIONS': {
         'user': [
-            'api.v1.permissions.IsOwnerOrReadOnly',
+            'api.v1.permissions.IsOwner',
         ],
         'user_list': [
             'rest_framework.permissions.AllowAny',

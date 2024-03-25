@@ -160,7 +160,7 @@ class Rating(models.Model):
     """Модель рейтинга сервиса. """
 
     user = models.ForeignKey(
-        User,
+        CustomUser,
         on_delete=models.CASCADE
     )
     service = models.ForeignKey(
