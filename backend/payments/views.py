@@ -1,8 +1,6 @@
 # from django.shortcuts import render
 
-from push_notifications.models import (APNSDevice,
-                                       # GCMDevice
-                                       )
+from push_notifications.models import APNSDevice  # GCMDevice
 
 
 def send_push_notification(device_id, message):

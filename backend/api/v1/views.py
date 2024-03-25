@@ -2,38 +2,32 @@
 # from django.shortcuts import get_object_or_404
 # from django_filters.rest_framework import DjangoFilterBackend
 # from api.filters import ServicesFilter
-# from api.permissions import IsOwnerOrReadOnly
+import datetime
+import random
+import string
 
-from api.v1.serializers import (  # CustomUserGetSerializer, CustomUserSerializer
-    CategorySerializer,
-    CustomUserSerializer,
-    RatingSerializer,
-    ServiceSerializer,
-    SubscriptionSerializer,
-)
 from django.contrib.auth import get_user_model
+# from django.shortcuts import redirect
 from djoser.views import UserViewSet
-from rest_framework import authentication, status, views, viewsets
-from rest_framework.authtoken.models import Token
+from rest_framework import status, viewsets
+# from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
-
-# from rest_framework.pagination import PageNumberPagination
-from rest_framework.permissions import (
-    AllowAny,
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
-from services.models import Category, Service, Subscription
+from rest_framework.views import APIView
 
-# from django.contrib.auth.models import User
+from api.v1.permissions import IsOwner
+from api.v1.serializers import (CategorySerializer,
+                                CustomUserSerializer,
+                                NewPopularSerializer,
+                                RatingSerializer,
+                                ServiceSerializer,
+                                SubscribedServiceSerializer,
+                                SubscriptionSerializer)
 # from payments.models import AutoPayment, Tarif, SellHistory
+from services.models import Category, Rating, Service, Subscription
 
 
-# class CommonPagination(PageNumberPagination): НЕ НУЖНА СКОРЕЕ ВСЕГО
-#     """Пагинация."""
-#     page_size = 6
-#     page_size_query_param = 'limit'
 User = get_user_model()
 
 
@@ -49,14 +43,56 @@ class CustomUserViewSet(UserViewSet):
 
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление списка сервисов/отдельного сервиса,
-    Обрабатывает запросы к /api/services/ и /api/services/{id}/"""
+    """Представление главной страницы,
+    списков сервисов и отдельного сервиса,
+    Обрабатывает запросы к главной странице,
+    каталогам сервисов и странице отдельного сервиса.
+    """
 
     queryset = Service.objects.all()
-    # permission_classes = [IsOwnerOrReadOnly, IsAuthenticatedOrReadOnly]
-    # pagination_class = CommonPagination
     # filterset_class = ServicesFilter
     serializer_class = ServiceSerializer
+
+    def get_queryset(self):
+        queryset = self.queryset
+
+        if self.action == 'list':
+            if self.request.path == '/catalog_new/':
+                queryset = Service.objects.filter(new=True)
+            elif self.request.path == '/catalog_popular/':
+                queryset = Service.objects.filter(popular=True)
+            elif self.request.path == '/services/':
+                user = self.request.user
+                if user.is_authenticated:
+                    subscriptions = Subscription.objects.filter(user=user)
+                    subscribed_services = [
+                        subscription.service
+                        for subscription in subscriptions
+                    ]
+                    queryset = subscribed_services
+        return queryset
+
+    def list(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        category_queryset = Category.objects.all()
+        context = {'request': request}
+        serializer = self.get_serializer(queryset, context=context, many=True)
+        category_serializer = CategorySerializer(category_queryset, many=True)
+        data = {
+            'services': serializer.data,
+            'categories': category_serializer.data,
+        }
+        return Response(data)
+
+    def get_serializer_class(self):
+        if self.request.path == '/services/':
+            return SubscribedServiceSerializer
+        elif (
+            self.request.path == '/catalog_new/'
+            or self.request.path == '/catalog_popular/'
+        ):
+            return NewPopularSerializer
+        return super().get_serializer_class()
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -64,7 +100,66 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
-    # pagination_class = None
+
+    def list(self, request):
+        queryset = self.get_queryset()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    def get_queryset(self):
+        return self.queryset
+
+
+class SubscribeView(APIView):
+    """Оформление подписки на сервис."""
+    # мб лучше к ServiceViewSet с декоратором и/или миксином?
+
+    def post(self, request):
+        service_id = request.data.get('service_id')
+        user = request.user
+        try:
+            service = Service.objects.get(id=service_id)
+            Subscription.objects.create(user=user, service=service)
+            return Response(status=status.HTTP_200_OK)
+        except Service.DoesNotExist:
+            return Response(status=status.HTTP_404_NOT_FOUND)
+
+
+class SubscriptionPaymentView(APIView):
+    """Оплата подписки на сервис."""
+
+    def post(self, request):
+        # логика оплаты (ввод карты и получение ответа от банка)- ???
+        callback = True
+        # типа оплата прошла
+        # или разобр как запросить ответ у стороннего сервера,закомментить это
+        if callback:
+            return Response(status=status.HTTP_200_OK)
+        else:
+            return Response(
+                {'message': 'Проблема на стороне банка'},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        # обработать ошибку иначе и переадресовать
+        # на кастомный шаблон error/bank или error/nomoney
+
+
+class SubscriptionPaidView(APIView):
+    """Страница с промокодом после успешной оплаты подписки."""
+
+    def post(self, request):
+        subscription = Subscription.objects.get(
+            user=request.user,
+            payment_status=True
+        )
+        promo_code = ''.join(
+            random.choices(string.ascii_letters + string.digits, k=12)
+        )
+        expiry_date = datetime.date.today() + datetime.timedelta(days=30)
+        subscription.promo_code = promo_code
+        subscription.expiry_date = expiry_date
+        subscription.save()
+        return Response(status=status.HTTP_200_OK)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):
@@ -72,33 +167,11 @@ class SubscriptionViewSet(viewsets.ViewSet):
 
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
-
-    @action(detail=True, methods=['post'])
-    def subscribe(self, request, pk=None):
-        service = Service.objects.get(pk=pk)
-        user = request.user
-        subscription_query = Subscription.objects.get_or_create(
-            user=user, service=service
-        )
-        if subscription_query[1]:
-            return Response(
-                {'message': 'Successfully subscribed'},
-                status=status.HTTP_201_CREATED,
-            )
-        else:
-            return Response(
-                {'message': 'Already subscribed'}, status=status.HTTP_200_OK
-            )
-        # subscription, created = subscription_query
-
-        # if created:
-        #     return Response(
-        # {'message': 'Successfully subscribed'}, status=status.HTTP_201_CREATED)
-        # else:
-        #     return Response({'message': 'Already subscribed'}, status=status.HTTP_200_OK)
+    permission_classes = [IsOwner]
 
     @action(detail=True, methods=['delete'])
     def unsubscribe(self, request, pk=None):
+        """Отменить подписку."""
         service = Service.objects.get(pk=pk)
         user = request.user
         try:
@@ -114,6 +187,16 @@ class SubscriptionViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
+    @action(detail=True, methods=['patch'])
+    def change_tarif(self, request, pk=None):
+        """Сменить тариф."""
+        pass
+
+    @action(detail=True, methods=['patch'])
+    def autopayment(self, request, pk=None):
+        """Подключить автооплату."""
+        pass
+
 
 class RatingViewSet(viewsets.ModelViewSet):
     serializer_class = RatingSerializer
@@ -121,8 +204,8 @@ class RatingViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == 'create':
-            return [IsAuthenticated()]
-        return [IsOwnerOrReadOnly()]
+            return [IsOwner()]
+        return [IsAuthenticated()]
 
     @action(detail=False, methods=['put'])
     def update_rating(self, request):
