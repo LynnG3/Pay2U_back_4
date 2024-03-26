@@ -1,17 +1,13 @@
-from typing import Optional
 import datetime
-
-# from django.core.validators import MaxValueValidator, MinValueValidator
+from typing import Optional
 
 # from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Exists, OuterRef
-
+from django.db.models import Exists, OuterRef, UniqueConstraint
+from django.db.models.signals import post_save
 # from django.forms import MultiValueField, CharField, MultiWidget, TextInput
 from django.dispatch import receiver
-from django.db.models.signals import post_save
-from django.db.models import UniqueConstraint
 
 from users.models import CustomUser
 
@@ -21,7 +17,9 @@ class Category(models.Model):
 
     title = models.CharField("Заголовок", max_length=30)
     image = models.ImageField(
-        "Ссылка на изображение", upload_to="services/images/", null=True, default=None
+        "Ссылка на изображение",
+        upload_to="services/images/",
+        null=True, default=None
     )
 
     class Meta:
@@ -41,7 +39,9 @@ class ServiceQuerySet(models.QuerySet):
     def add_user_annotations(self, user_id: Optional[int]):
         return self.annotate(
             is_subscribed=Exists(
-                Subscription.objects.filter(user_id=user_id, service__pk=OuterRef("pk"))
+                Subscription.objects.filter(
+                    user_id=user_id, service__pk=OuterRef("pk")
+                )
             ),
         )
 
@@ -57,9 +57,14 @@ class Service(models.Model):
         blank=True,
         null=True,
     )
-    name = models.CharField(max_length=50, verbose_name="Название сервиса")
+    name = models.CharField(
+        max_length=50,
+        verbose_name="Название сервиса"
+    )
     image = models.ImageField(
-        "Ссылка на изображение", upload_to="services/images/", null=True, default=None
+        "Ссылка на изображение",
+        upload_to="services/images/",
+        null=True, default=None
     )
     text = models.TextField(verbose_name="Описание")
     cost = models.PositiveIntegerField(
@@ -127,7 +132,8 @@ class Subscription(models.Model):
 
     class Meta:
         constraints = [
-            UniqueConstraint(fields=["user", "service"], name="unique_subscription")
+            UniqueConstraint(fields=["user", "service"],
+                             name="unique_subscription")
         ]
 
 
