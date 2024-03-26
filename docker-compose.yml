@@ -1,47 +1,49 @@
-version: '3'
+version: '3.3'
 
 volumes:
   pg_data:
   static:
   media:
-  redoc:
 
 services:
   db:
     image: postgres:13.10
-    env_file: .env
+    env_file: ./backend/.env
     volumes:
       - pg_data:/var/lib/postgresql/data
+
   backend:
-    build: ./backend/
-    env_file: .env
+    build:
+      context: ./backend/
+      dockerfile: Dockerfile
+    env_file: ./backend/.env
     volumes:
-      - static:/static_backend/
+      - static:/app/static_backend/
       - media:/app/media/
-      - redoc:/app/docs/
     depends_on:
       - db
-  
+
   frontend:
-    build: ./frontend/
-    env_file: .env
-    command: cp -r /app/build/. /result_build/
+    build:
+      context: ./frontend/
+      dockerfile: Dockerfile
+    env_file: ./backend/.env
     volumes:
       - static:/result_build/
+    command: cp -r /app/build/. /result_build/
     depends_on:
       - db
 
   gateway:
-    build: ./nginx/
-    env_file: .env
+    build:
+      context: ./nginx/
+      dockerfile: Dockerfile
+    env_file: ./backend/.env
     volumes:
       - static:/staticfiles/
-      - media:/app/media/
-      - ./docs/:/usr/share/nginx/api/v1/schema/docs/
+      - media:/mediafiles/
     ports:
       - 8000:80
     depends_on:
       - backend
       - frontend
-
-  
