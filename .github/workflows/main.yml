@@ -3,7 +3,7 @@ name: Main Pay2u workflow
 on:
   push:
     branches:
-      [ 'main', 'dev', 'dev/den', 'dev/olya']
+      [ 'main', 'dev' ]
     paths-ignore:
       - '**/README.md'
 
