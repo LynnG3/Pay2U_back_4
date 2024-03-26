@@ -17,16 +17,12 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from api.v1.permissions import IsOwner
-from api.v1.serializers import (CategorySerializer,
-                                CustomUserSerializer,
-                                NewPopularSerializer,
-                                RatingSerializer,
-                                ServiceSerializer,
-                                SubscribedServiceSerializer,
+from api.v1.serializers import (CategorySerializer, CustomUserSerializer,
+                                NewPopularSerializer, RatingSerializer,
+                                ServiceSerializer, SubscribedServiceSerializer,
                                 SubscriptionSerializer)
 # from payments.models import AutoPayment, Tarif, SellHistory
 from services.models import Category, Rating, Service, Subscription
-
 
 User = get_user_model()
 

@@ -8,13 +8,13 @@ volumes:
 services:
   db:
     image: postgres:13.10
-    env_file: ./backend/.env
+    env_file: .env
     volumes:
       - pg_data:/var/lib/postgresql/data
 
   backend:
     image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_backend
-    env_file: ./backend/.env/
+    env_file: .env
     volumes:
       - static:/static_backend/
       - media:/app/media/
@@ -23,7 +23,7 @@ services:
 
   frontend:
     image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_frontend
-    env_file: ./backend/.env/
+    env_file: .env
     command: cp -r /app/build/. /frontend_static/
     volumes:
       - static:/frontend_static/
@@ -32,7 +32,7 @@ services:
 
   gateway:
     image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_gateway
-    env_file: ./backend/.env/
+    env_file: .env
     volumes:
       - static:/staticfiles/
       - media:/mediafiles/

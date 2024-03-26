@@ -7,7 +7,7 @@
 # from recipes.models import Ingredient, Tag
 
 # DICT_MODELS_RECIPES = {
-#     Ingredient: os.path.join(settings.STATICFILES_DIRS[0], 'ingredients.csv'),
+#    Ingredient: os.path.join(settings.STATICFILES_DIRS[0], 'ingredients.csv'),
 #     Tag: os.path.join(settings.STATICFILES_DIRS[0], 'tags.csv'),
 # }
 

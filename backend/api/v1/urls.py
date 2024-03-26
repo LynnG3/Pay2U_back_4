@@ -2,8 +2,8 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import routers
 
-from .views import (CategoryViewSet,  # CustomUserViewSet,; HistoryViewSet
-                    CustomUserViewSet, ServiceViewSet, SubscribeView,
+from .views import CategoryViewSet  # CustomUserViewSet,; HistoryViewSet
+from .views import (CustomUserViewSet, ServiceViewSet, SubscribeView,
                     SubscriptionPaidView, SubscriptionPaymentView,
                     SubscriptionViewSet)
 
