@@ -56,23 +56,20 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         queryset = self.queryset
 
-        if self.action == 'list':
-            if self.request.path == '/catalog_new/':
-                queryset = Service.objects.filter(new=True)
-            elif self.request.path == '/catalog_popular/':
-                queryset = Service.objects.filter(popular=True)
-            elif self.request.path == '/services/':
-                user = self.request.user
-                if user.is_authenticated:
-                    subscriptions = Subscription.objects.filter(user=user)
-                    subscribed_services = [
-                        subscription.service
-                        for subscription in subscriptions
-                    ]
-                    queryset = subscribed_services
+        # представления на главной странице
+        if self.request.path == '/services/':
+            if 'new' in self.request.query_params:
+                queryset = Service.objects.filter(is_new=True)
+            elif 'popular' in self.request.query_params:
+                queryset = Service.objects.filter(is_popular=True)
+            elif 'is_subscribed' in self.request.query_params:
+                queryset = Service.objects.filter(is_subscribed=True)
         return queryset
 
     def list(self, request):
+        """Список категорий на главной странице для перехода по
+        каталогам категорий.
+        """
         queryset = self.filter_queryset(self.get_queryset())
         category_queryset = Category.objects.all()
         context = {'request': request}
@@ -86,12 +83,14 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_serializer_class(self):
         if self.request.path == '/services/':
-            return SubscribedServiceSerializer
-        elif (
-            self.request.path == '/catalog_new/'
-            or self.request.path == '/catalog_popular/'
-        ):
-            return NewPopularSerializer
+            if 'is_subscribed' in self.request.query_params:
+                return SubscribedServiceSerializer
+            elif (
+                'new' in self.request.query_params
+                or 'popular' in self.request.query_params
+            ):
+                return NewPopularSerializer
+            return ServiceSerializer
         return super().get_serializer_class()
 
 
