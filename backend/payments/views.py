@@ -4,7 +4,7 @@ from push_notifications.models import APNSDevice  # GCMDevice
 
 
 def send_push_notification(device_id, message):
-    """Заготовка для пуш-уведомлений. """
+    """Заготовка для пуш-уведомлений."""
     # Находим устройство пользователя по его идентификатору
     device = APNSDevice.objects.get(device_id=device_id)
 

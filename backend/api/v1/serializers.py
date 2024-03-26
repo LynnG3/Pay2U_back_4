@@ -1,4 +1,4 @@
-'''Сериализатор для приложений services, payments и users. '''
+"""Сериализатор для приложений services, payments и users. """
 
 from tokenize import Token
 
@@ -23,13 +23,13 @@ class CustomUserSerializer(UserSerializer):
 class Meta:
     model = User
     fields = (
-        'id',
-        'phone_number',
-        'username',
-        'first_name',
-        'last_name',
-        'surname',
-        'email',
+        "id",
+        "phone_number",
+        "username",
+        "first_name",
+        "last_name",
+        "surname",
+        "email",
     )
 
 
@@ -39,29 +39,29 @@ class CreateCustomUserSerializer(UserCreateSerializer):
     class Meta:
         model = User
         fields = (
-            'email',
-            'phone_number',
-            'id',
-            'username',
-            'first_name',
-            'last_name',
-            'surname',
-            'password',
+            "email",
+            "phone_number",
+            "id",
+            "username",
+            "first_name",
+            "last_name",
+            "surname",
+            "password",
         )
         extra_kwargs = {
-            'password': {'write_only': True},
-            'email': {'required': True},
-            'phone_number': {'required': True},
-            'first_name': {'required': True},
-            'last_name': {'required': True},
-            'surname': {'required': True},
+            "password": {"write_only": True},
+            "email": {"required": True},
+            "phone_number": {"required": True},
+            "first_name": {"required": True},
+            "last_name": {"required": True},
+            "surname": {"required": True},
         }
 
 
 class TokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = Token
-        fields = ('key',)
+        fields = ("key",)
 
 
 class CategorySerializer(serializers.ModelSerializer):
@@ -71,7 +71,7 @@ class CategorySerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Category
-        fields = ('id', 'image', 'title')
+        fields = ("id", "image", "title")
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -82,7 +82,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     def get_subscriptions(self, obj):
         """Получение своих подписок."""
-        request = self.context.get('request')
+        request = self.context.get("request")
         if request is None or request.user.is_anonymous:
             return False
         user = request.user
@@ -90,14 +90,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = (
-            'name',
-            'image',
-            'text',
-            'cost',
-            'cashback',
-            'is_subscribed'
-        )
+        fields = ("name", "image", "text", "cost", "cashback", "is_subscribed")
 
 
 class SubscribedServiceSerializer(serializers.ModelSerializer):
@@ -108,7 +101,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ('image',)
+        fields = ("image",)
 
 
 class NewPopularSerializer(serializers.ModelSerializer):
@@ -119,8 +112,8 @@ class NewPopularSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = ('id', 'name', 'image', 'cashback')
-        read_only_fields = ('id', 'name', 'image', 'cashback')
+        fields = ("id", "name", "image", "cashback")
+        read_only_fields = ("id", "name", "image", "cashback")
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
@@ -130,7 +123,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Subscription
-        fields = '__all__'
+        fields = "__all__"
 
     # def get_activation_status(self, obj):
     #     """Получение статуса подписки."""
@@ -144,4 +137,4 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class RatingSerializer(serializers.ModelSerializer):
     class Meta:
         model = Rating
-        fields = '__all__'
+        fields = "__all__"
