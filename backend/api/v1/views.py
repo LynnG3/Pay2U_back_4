@@ -62,20 +62,20 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
                 queryset = Service.objects.filter(is_subscribed=True)
         return queryset
 
-    def list(self, request):
-        """Список категорий на главной странице для перехода по
-        каталогам категорий.
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        category_queryset = Category.objects.all()
-        context = {"request": request}
-        serializer = self.get_serializer(queryset, context=context, many=True)
-        category_serializer = CategorySerializer(category_queryset, many=True)
-        data = {
-            "services": serializer.data,
-            "categories": category_serializer.data,
-        }
-        return Response(data)
+    # def list(self, request):
+    #     """Список категорий на главной странице для перехода по
+    #     каталогам категорий.
+    #     """
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     category_queryset = Category.objects.all()
+    #     context = {"request": request}
+    #     serializer = self.get_serializer(queryset, context=context, many=True)
+    #     category_serializer = CategorySerializer(category_queryset, many=True)
+    #     data = {
+    #         "services": serializer.data,
+    #         "categories": category_serializer.data,
+    #     }
+    #     return Response(data)
 
     def get_serializer_class(self):
         if self.request.path == "/services/":
