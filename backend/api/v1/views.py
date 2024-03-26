@@ -67,7 +67,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
         return queryset
 
     def list(self, request):
-        """Список категорий на главной странице для перехода по 
+        """Список категорий на главной странице для перехода по
         каталогам категорий.
         """
         queryset = self.filter_queryset(self.get_queryset())

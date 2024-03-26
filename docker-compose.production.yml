@@ -4,40 +4,38 @@ volumes:
   pg_data:
   static:
   media:
-  schema:
 
 services:
   db:
     image: postgres:13.10
-    env_file: .env
+    env_file: ./backend/.env
     volumes:
       - pg_data:/var/lib/postgresql/data
+
   backend:
-    image: linorra/pay2u_backend
-    env_file: .env
+    image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_backend
+    env_file: ./backend/.env/
     volumes:
       - static:/static_backend/
       - media:/app/media/
-      - schema:/usr/share/nginx/api/v1/schema/docs/
     depends_on:
       - db
-  
+
   frontend:
-    image: linorra/pay2u_frontend
-    env_file: .env
-    command: cp -r /app/build/. /result_build/
+    image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_frontend
+    env_file: ./backend/.env/
+    command: cp -r /app/build/. /frontend_static/
     volumes:
-      - static:/result_build/
+      - static:/frontend_static/
     depends_on:
       - db
 
   gateway:
-    image: linorra/pay2u_gateway
-    env_file: .env
+    image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_gateway
+    env_file: ./backend/.env/
     volumes:
       - static:/staticfiles/
-      - media:/app/media/
-      - schema:/usr/share/nginx/api/v1/schema/docs/
+      - media:/mediafiles/
     ports:
       - 8000:80
     depends_on:
