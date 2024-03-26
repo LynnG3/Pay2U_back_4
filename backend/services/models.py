@@ -11,6 +11,8 @@ from django.dispatch import receiver
 
 from users.models import CustomUser
 
+# from django.core.validators import MaxValueValidator, MinValueValidator
+
 
 class Category(models.Model):
     """Модель тематической категории сервиса."""
