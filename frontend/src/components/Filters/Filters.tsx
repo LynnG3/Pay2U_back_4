@@ -1,6 +1,6 @@
 import { Box } from '@mui/material';
-import FilterSelect from './FilterSelect/FilterSelect';
-import FilterSlide from './FilterSlide/FilterSlide';
+// import FilterSelect from './FilterSelect/FilterSelect';
+// import FilterSlide from './FilterSlide/FilterSlide';
 
 export default function Filters() {
   const styles = {
@@ -9,8 +9,8 @@ export default function Filters() {
 
   return (
     <Box sx={styles.container}>
-      <FilterSelect />
-      <FilterSlide />
+      {/* <FilterSelect />
+      <FilterSlide /> */}
     </Box>
   );
 }
