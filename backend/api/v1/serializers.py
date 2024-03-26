@@ -6,9 +6,9 @@ from django.contrib.auth import get_user_model
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
-from services.models import Category, Service, Subscription
-
 from rest_framework.authtoken.models import Token
+
+from services.models import Category, Rating, Service, Subscription
 
 # from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
@@ -64,67 +64,23 @@ class TokenSerializer(serializers.ModelSerializer):
         fields = ('key',)
 
 
-# class SubscriptionMixin:
-
-#     def get_is_subscribed(self, obj):
-#         request = self.context.get('request')
-#         if request is None or request.user.is_anonymous:
-#             return False
-#         return Subscription.objects.filter(user=request.user, author=obj.id).exists()
-
-
-# class CustomUserGetSerializer(UserSerializer, SubscriptionMixin):
-#     """Сериализатор для просмотра инфо пользователя. """
-
-#     is_subscribed = SerializerMethodField()
-
-#     class Meta:
-#         model = CustomUser
-#         fields = (
-#             'id',
-#             'username',
-#             'email',
-#             'first_name',
-#             'last_name',
-#             'is_subscribed'
-#         )
-
-
-# class PasswordSerializer(serializers.Serializer):
-#     """Сериализатор смены пароля. """
-
-#     new_password = serializers.CharField(required=True)
-#     current_password = serializers.CharField(required=True)
-
-#     class Meta:
-#         model = CustomUser
-#         fields = '__all__'
-
-
-# class TokenSerializer(serializers.ModelSerializer):
-#     """Сериализатор получения токена. """
-
-#     token = serializers.CharField(source='key')
-
-#     class Meta:
-#         model = Token
-#         fields = ('token',)
-
-
 class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категории."""
 
+    image = Base64ImageField()
+
     class Meta:
         model = Category
-        fields = ('id', 'title', 'slug')
+        fields = ('id', 'image', 'title')
 
 
 class ServiceSerializer(serializers.ModelSerializer):
     """Получение инфо о сервисе."""
 
     is_subscribed = serializers.SerializerMethodField()
+    image = Base64ImageField()
 
-    def get_is_subscribed(self, obj):
+    def get_subscriptions(self, obj):
         """Получение своих подписок."""
         request = self.context.get('request')
         if request is None or request.user.is_anonymous:
@@ -134,63 +90,58 @@ class ServiceSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Service
-        fields = '__all__'
+        fields = (
+            'name',
+            'image',
+            'text',
+            'cost',
+            'cashback',
+            'is_subscribed'
+        )
+
+
+class SubscribedServiceSerializer(serializers.ModelSerializer):
+    """Сериализатор чтения краткой информации о сервисах,
+    на которые подписан пользователь,
+    отображаемой в баннере на главной странице.
+    """
+
+    class Meta:
+        model = Service
+        fields = ('image',)
 
 
 class NewPopularSerializer(serializers.ModelSerializer):
     """Cериализатор чтения сервисов
-    для новинок и популярного."""
+    для каталогов - новинки и популярное."""
 
     image = Base64ImageField()
 
     class Meta:
         model = Service
-        fields = ('id', 'name', 'image')
-        read_only_fields = ('id', 'name', 'image')
-
-
-# class SubscriptionReadSerializer(serializers.ModelSerializer):
-#     """Сериализатор просмотра подписок текущего пользователя. """
-
-#     is_subscribed = SerializerMethodField()
-#     services = serializers.SerializerMethodField()
-
-
-#     class Meta:
-
-
-# class SubscriptionSerializer(serializers.ModelSerializer):
-#     """Сериализатор подписок. """
-
-#     service = serializers.PrimaryKeyRelatedField(
-#         queryset=Service.objects.all()
-#     )
-#     user = serializers.PrimaryKeyRelatedField(
-#         queryset=User.objects.all()
-#     )
-
-#     class Meta:
-#         model = Subscription
-#         fields = ('user', 'service')
-#         validators = (
-#             UniqueTogetherValidator(
-#                 queryset=Subscription.objects.all(),
-#                 fields=('user', 'service'),
-#                 message='Вы подписаны на этот сервис. '
-#             ),
-#         )
-
-#     def to_representation(self, instance):
-#         """Определяет сериализатор для чтения."""
-#         service_instance = instance.service
-#         return SubscriptionSerializer(
-#             service_instance,
-#             context={'request':
-#                      self.context['request']}
-#         ).data
+        fields = ('id', 'name', 'image', 'cashback')
+        read_only_fields = ('id', 'name', 'image', 'cashback')
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
+    """Cериализатор подписки ."""
+
+    activation_status = serializers.SerializerMethodField()
+
     class Meta:
         model = Subscription
+        fields = '__all__'
+
+    # def get_activation_status(self, obj):
+    #     """Получение статуса подписки."""
+    #     request = self.context.get('request')
+    #     if request is None or request.user.is_anonymous:
+    #         return False
+    #     user = request.user
+    #     return Subscription.objects.filter(service=obj, user=user).exists()
+
+
+class RatingSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Rating
         fields = '__all__'

@@ -4,7 +4,7 @@ volumes:
   pg_data:
   static:
   media:
-  redoc:
+  schema:
 
 services:
   db:
@@ -13,17 +13,17 @@ services:
     volumes:
       - pg_data:/var/lib/postgresql/data
   backend:
-    image: linorra/infra_backend-1
+    image: linorra/pay2u_backend
     env_file: .env
     volumes:
       - static:/static_backend/
       - media:/app/media/
-      - redoc:/app/docs/
+      - schema:/usr/share/nginx/api/v1/schema/docs/
     depends_on:
       - db
   
   frontend:
-    image: linorra/infra_frontend-1
+    image: linorra/pay2u_frontend
     env_file: .env
     command: cp -r /app/build/. /result_build/
     volumes:
@@ -32,13 +32,12 @@ services:
       - db
 
   gateway:
-    image: linorra/infra_gateway-1
+    image: linorra/pay2u_gateway
     env_file: .env
     volumes:
       - static:/staticfiles/
       - media:/app/media/
-      - ./docs/:/usr/share/nginx/html/api/docs/
-      - redoc:/usr/share/nginx/html/api/docs/
+      - schema:/usr/share/nginx/api/v1/schema/docs/
     ports:
       - 8000:80
     depends_on:

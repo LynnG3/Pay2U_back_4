@@ -37,7 +37,7 @@ services:
     volumes:
       - static:/staticfiles/
       - media:/app/media/
-      - ./docs/:/usr/share/nginx/html/api/docs/
+      - ./docs/:/usr/share/nginx/api/v1/schema/docs/
     ports:
       - 8000:80
     depends_on:
