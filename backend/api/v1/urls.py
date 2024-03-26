@@ -25,27 +25,27 @@ urlpatterns = [
     path("", include("djoser.urls")),
     path("", include("djoser.urls.authtoken")),
     path("services/", ServiceViewSet.as_view(
-        {"get": "list"}
+        {"get": "get_queryset"}
     ), name="services"),
     path("categories/", CategoryViewSet.as_view(
         {"get": "list"}
     ), name="categories"),
     path("catalog/", ServiceViewSet.as_view({"get": "list"}), name="catalog"),
-    path(
-        "catalog_new/",
-        ServiceViewSet.as_view({"get": "list"}),
-        name="catalog_new",
-    ),
-    path(
-        "catalog_popular/",
-        ServiceViewSet.as_view({"get": "list"}),
-        name="catalog_popular",
-    ),
-    path(
-        "catalog_category/<int:category_id>/",
-        ServiceViewSet.as_view({"get": "list"}),
-        name="catalog_category",
-    ),
+    # path(
+    #     "catalog_new/",
+    #     ServiceViewSet.as_view({"get": "get_queryset"}),
+    #     name="catalog_new",
+    # ),
+    # path(
+    #     "catalog_popular/",
+    #     ServiceViewSet.as_view({"get": "list"}),
+    #     name="catalog_popular",
+    # ),
+    # path(
+    #     "catalog_category/<int:category_id>/",
+    #     ServiceViewSet.as_view({"get": "list"}),
+    #     name="catalog_category",
+    # ),
     path("subscribe/", SubscribeView.as_view(), name="subscribe"),
     path(
         "subscription_payment/",
