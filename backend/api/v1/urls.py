@@ -24,13 +24,15 @@ urlpatterns = [
     path("", include(router_v1.urls)),
     path("", include("djoser.urls")),
     path("", include("djoser.urls.authtoken")),
-    path("services/", ServiceViewSet.as_view(
+    # path("services/", ServiceViewSet.as_view(
+    #     {"get": "get_queryset"}
+    # ), name="services"),
+    # path("categories/", CategoryViewSet.as_view(
+    #     {"get": "list"}
+    # ), name="categories"),
+    path("catalog/", ServiceViewSet.as_view(
         {"get": "get_queryset"}
-    ), name="services"),
-    path("categories/", CategoryViewSet.as_view(
-        {"get": "list"}
-    ), name="categories"),
-    path("catalog/", ServiceViewSet.as_view({"get": "list"}), name="catalog"),
+    ), name="catalog"),
     # path(
     #     "catalog_new/",
     #     ServiceViewSet.as_view({"get": "get_queryset"}),
