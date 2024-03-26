@@ -8,48 +8,100 @@ class Migration(migrations.Migration):
 
     initial = True
 
-    dependencies = [
-    ]
+    dependencies = []
 
     operations = [
         migrations.CreateModel(
-            name='Category',
+            name="Category",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('title', models.CharField(max_length=30, verbose_name='Заголовок')),
-                ('slug', models.SlugField(unique=True, verbose_name='Слаг')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("title", models.CharField(max_length=30, verbose_name="Заголовок")),
+                ("slug", models.SlugField(unique=True, verbose_name="Слаг")),
             ],
             options={
-                'verbose_name': 'категория',
-                'verbose_name_plural': 'категории',
-                'ordering': ('title',),
+                "verbose_name": "категория",
+                "verbose_name_plural": "категории",
+                "ordering": ("title",),
             },
         ),
         migrations.CreateModel(
-            name='Service',
+            name="Service",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('name', models.CharField(max_length=50, verbose_name='Название сервиса')),
-                ('image', models.ImageField(default=None, null=True, upload_to='services/images/', verbose_name='Ссылка на изображение')),
-                ('text', models.TextField(verbose_name='Текст')),
-                ('cost', models.PositiveIntegerField(verbose_name='Стоимость подписки')),
-                ('cashback', models.PositiveIntegerField(verbose_name='Кэшбэк (в процентах)')),
-                ('new', models.BooleanField(default=True)),
-                ('popular', models.BooleanField(default=False)),
-                ('pub_date', models.DateTimeField(auto_now_add=True, db_index=True, verbose_name='Дата добавления')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                (
+                    "name",
+                    models.CharField(max_length=50, verbose_name="Название сервиса"),
+                ),
+                (
+                    "image",
+                    models.ImageField(
+                        default=None,
+                        null=True,
+                        upload_to="services/images/",
+                        verbose_name="Ссылка на изображение",
+                    ),
+                ),
+                ("text", models.TextField(verbose_name="Текст")),
+                (
+                    "cost",
+                    models.PositiveIntegerField(verbose_name="Стоимость подписки"),
+                ),
+                (
+                    "cashback",
+                    models.PositiveIntegerField(verbose_name="Кэшбэк (в процентах)"),
+                ),
+                ("new", models.BooleanField(default=True)),
+                ("popular", models.BooleanField(default=False)),
+                (
+                    "pub_date",
+                    models.DateTimeField(
+                        auto_now_add=True, db_index=True, verbose_name="Дата добавления"
+                    ),
+                ),
             ],
             options={
-                'verbose_name': 'Сервис',
-                'verbose_name_plural': 'Сервисы',
-                'ordering': ('-pub_date',),
+                "verbose_name": "Сервис",
+                "verbose_name_plural": "Сервисы",
+                "ordering": ("-pub_date",),
             },
         ),
         migrations.CreateModel(
-            name='Subscription',
+            name="Subscription",
             fields=[
-                ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
-                ('subscribed_date', models.DateTimeField(auto_now_add=True)),
-                ('service', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subscriptions', to='services.service')),
+                (
+                    "id",
+                    models.BigAutoField(
+                        auto_created=True,
+                        primary_key=True,
+                        serialize=False,
+                        verbose_name="ID",
+                    ),
+                ),
+                ("subscribed_date", models.DateTimeField(auto_now_add=True)),
+                (
+                    "service",
+                    models.ForeignKey(
+                        on_delete=django.db.models.deletion.CASCADE,
+                        related_name="subscriptions",
+                        to="services.service",
+                    ),
+                ),
             ],
         ),
     ]

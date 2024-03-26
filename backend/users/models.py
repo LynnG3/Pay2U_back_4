@@ -13,54 +13,54 @@ class CustomUser(AbstractUser):
     """Модель пользователя для приложения."""
 
     phone_number = models.CharField(
-        verbose_name='Номер телефона',
+        verbose_name="Номер телефона",
         max_length=MAX_PHONE_NUMBER_LENGTH,
         unique=True,
         validators=(validate_mobile,),
     )
     first_name = models.CharField(
-        verbose_name='Имя',
+        verbose_name="Имя",
         max_length=MAX_LENGTH_STRING_FOR_USER,
     )
     last_name = models.CharField(
-        verbose_name='Фамилия',
+        verbose_name="Фамилия",
         max_length=MAX_LENGTH_STRING_FOR_USER,
     )
     surname = models.CharField(
-        verbose_name='Отчество',
+        verbose_name="Отчество",
         max_length=MAX_LENGTH_STRING_FOR_USER,
     )
     username = models.CharField(
-        verbose_name='Уникальный юзернейм',
+        verbose_name="Уникальный юзернейм",
         max_length=MAX_LENGTH_STRING_FOR_USER,
         unique=True,
         validators=(
             RegexValidator(
-                regex=r'^[\w.@+-]+$',
-                message='Имя пользователя содержит недопустимые символы.',
+                regex=r"^[\w.@+-]+$",
+                message="Имя пользователя содержит недопустимые символы.",
             ),
             validate_username,
         ),
     )
     password = models.CharField(
-        verbose_name='Пароль',
+        verbose_name="Пароль",
         max_length=MAX_LENGTH_STRING_FOR_USER,
     )
     email = models.EmailField(
-        verbose_name='Адрес электронной почты',
+        verbose_name="Адрес электронной почты",
         max_length=MAX_LENGTH_EMAIL,
         unique=True,
         validators=(validate_email,),
     )
 
     class Meta:
-        ordering = ('username',)
-        verbose_name = 'Пользователь'
-        verbose_name_plural = 'Пользователи'
+        ordering = ("username",)
+        verbose_name = "Пользователь"
+        verbose_name_plural = "Пользователи"
         constraints = [
             models.UniqueConstraint(
-                fields=('username', 'email'),
-                name='unique_user_with_email',
+                fields=("username", "email"),
+                name="unique_user_with_email",
             ),
         ]
 

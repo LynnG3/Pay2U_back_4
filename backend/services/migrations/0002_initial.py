@@ -10,23 +10,36 @@ class Migration(migrations.Migration):
     initial = True
 
     dependencies = [
-        ('services', '0001_initial'),
+        ("services", "0001_initial"),
         migrations.swappable_dependency(settings.AUTH_USER_MODEL),
     ]
 
     operations = [
         migrations.AddField(
-            model_name='subscription',
-            name='user',
-            field=models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, related_name='subscriptions', to=settings.AUTH_USER_MODEL),
+            model_name="subscription",
+            name="user",
+            field=models.ForeignKey(
+                on_delete=django.db.models.deletion.CASCADE,
+                related_name="subscriptions",
+                to=settings.AUTH_USER_MODEL,
+            ),
         ),
         migrations.AddField(
-            model_name='service',
-            name='category',
-            field=models.ForeignKey(blank=True, max_length=30, null=True, on_delete=django.db.models.deletion.SET_NULL, to='services.category', verbose_name='категория'),
+            model_name="service",
+            name="category",
+            field=models.ForeignKey(
+                blank=True,
+                max_length=30,
+                null=True,
+                on_delete=django.db.models.deletion.SET_NULL,
+                to="services.category",
+                verbose_name="категория",
+            ),
         ),
         migrations.AddConstraint(
-            model_name='subscription',
-            constraint=models.UniqueConstraint(fields=('user', 'service'), name='unique_subscription'),
+            model_name="subscription",
+            constraint=models.UniqueConstraint(
+                fields=("user", "service"), name="unique_subscription"
+            ),
         ),
     ]
