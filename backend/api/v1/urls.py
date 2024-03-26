@@ -2,15 +2,10 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import routers
 
-from .views import (
-    CategoryViewSet,  # CustomUserViewSet,; HistoryViewSet
-    CustomUserViewSet,
-    ServiceViewSet,
-    SubscribeView,
-    SubscriptionPaidView,
-    SubscriptionPaymentView,
-    SubscriptionViewSet,
-)
+from .views import CategoryViewSet  # CustomUserViewSet,; HistoryViewSet
+from .views import (CustomUserViewSet, ServiceViewSet, SubscribeView,
+                    SubscriptionPaidView, SubscriptionPaymentView,
+                    SubscriptionViewSet)
 
 router_v1 = routers.DefaultRouter()
 # router_v1.register(r'autopayments', AutoPaymentViewSet)
@@ -29,8 +24,12 @@ urlpatterns = [
     path("", include(router_v1.urls)),
     path("", include("djoser.urls")),
     path("", include("djoser.urls.authtoken")),
-    path("services/", ServiceViewSet.as_view({"get": "list"}), name="services"),
-    path("categories/", CategoryViewSet.as_view({"get": "list"}), name="categories"),
+    path("services/", ServiceViewSet.as_view(
+        {"get": "list"}
+    ), name="services"),
+    path("categories/", CategoryViewSet.as_view(
+        {"get": "list"}
+    ), name="categories"),
     path("catalog/", ServiceViewSet.as_view({"get": "list"}), name="catalog"),
     path(
         "catalog_new/",
@@ -54,7 +53,9 @@ urlpatterns = [
         name="subscription_payment",
     ),
     path(
-        "subscription_paid/", SubscriptionPaidView.as_view(), name="subscription_paid"
+        "subscription_paid/",
+        SubscriptionPaidView.as_view(),
+        name="subscription_paid"
     ),
     path("", include("djoser.urls.authtoken")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),
