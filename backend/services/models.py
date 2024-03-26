@@ -1,11 +1,13 @@
 from typing import Optional
 import datetime
+
 # from django.core.validators import MaxValueValidator, MinValueValidator
 
 # from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import Exists, OuterRef
+
 # from django.forms import MultiValueField, CharField, MultiWidget, TextInput
 from django.dispatch import receiver
 from django.db.models.signals import post_save
@@ -15,20 +17,17 @@ from users.models import CustomUser
 
 
 class Category(models.Model):
-    """Модель тематической категории сервиса. """
+    """Модель тематической категории сервиса."""
 
-    title = models.CharField('Заголовок', max_length=30)
+    title = models.CharField("Заголовок", max_length=30)
     image = models.ImageField(
-        "Ссылка на изображение",
-        upload_to="services/images/",
-        null=True,
-        default=None
+        "Ссылка на изображение", upload_to="services/images/", null=True, default=None
     )
 
     class Meta:
-        verbose_name = 'категория'
-        verbose_name_plural = 'категории'
-        ordering = ('title',)
+        verbose_name = "категория"
+        verbose_name_plural = "категории"
+        ordering = ("title",)
 
     def __str__(self):
         return self.title
@@ -42,57 +41,47 @@ class ServiceQuerySet(models.QuerySet):
     def add_user_annotations(self, user_id: Optional[int]):
         return self.annotate(
             is_subscribed=Exists(
-                Subscription.objects.filter(
-                    user_id=user_id, service__pk=OuterRef('pk')
-                )
+                Subscription.objects.filter(user_id=user_id, service__pk=OuterRef("pk"))
             ),
         )
 
 
 class Service(models.Model):
-    """Модель сервиса. """
+    """Модель сервиса."""
 
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
-        verbose_name='категория',
+        verbose_name="категория",
         max_length=30,
         blank=True,
-        null=True
-    )
-    name = models.CharField(
-        max_length=50,
-        verbose_name='Название сервиса'
-    )
-    image = models.ImageField(
-        "Ссылка на изображение",
-        upload_to="services/images/",
         null=True,
-        default=None
     )
-    text = models.TextField(verbose_name='Описание')
+    name = models.CharField(max_length=50, verbose_name="Название сервиса")
+    image = models.ImageField(
+        "Ссылка на изображение", upload_to="services/images/", null=True, default=None
+    )
+    text = models.TextField(verbose_name="Описание")
     cost = models.PositiveIntegerField(
-        'Стоимость подписки',
+        "Стоимость подписки",
     )
     cashback = models.PositiveIntegerField(
-        'Кэшбэк (в процентах)',
+        "Кэшбэк (в процентах)",
     )
     new = models.BooleanField(default=True)
     popular = models.BooleanField(default=False)
     # popular  - в сериализаторе или вью сделать счетчик подписчиков
     # функция если больше ??? меняется на True
     pub_date = models.DateTimeField(
-        verbose_name='Дата добавления',
-        auto_now_add=True,
-        db_index=True
+        verbose_name="Дата добавления", auto_now_add=True, db_index=True
     )
 
     objects = ServiceQuerySet.as_manager()
 
     class Meta:
-        ordering = ('-pub_date',)
-        verbose_name = 'Сервис'
-        verbose_name_plural = 'Сервисы'
+        ordering = ("-pub_date",)
+        verbose_name = "Сервис"
+        verbose_name_plural = "Сервисы"
 
     def __str__(self):
         return self.name
@@ -120,17 +109,13 @@ class Service(models.Model):
 
 
 class Subscription(models.Model):
-    """Модель подписки юзера на сервисы. """
+    """Модель подписки юзера на сервисы."""
 
     user = models.ForeignKey(
-        CustomUser,
-        related_name='subscriptions',
-        on_delete=models.CASCADE
+        CustomUser, related_name="subscriptions", on_delete=models.CASCADE
     )
     service = models.ForeignKey(
-        Service,
-        related_name='subscriptions',
-        on_delete=models.CASCADE
+        Service, related_name="subscriptions", on_delete=models.CASCADE
     )
     payment_status = models.BooleanField(default=False)
     # но если это подписка - значит она уже оплачена? поле не нужно?
@@ -142,9 +127,7 @@ class Subscription(models.Model):
 
     class Meta:
         constraints = [
-            UniqueConstraint(
-                fields=['user', 'service'], name='unique_subscription'
-            )
+            UniqueConstraint(fields=["user", "service"], name="unique_subscription")
         ]
 
 
@@ -156,20 +139,16 @@ def update_user_subscriptions_count(sender, instance, **kwargs):
 
 
 class Rating(models.Model):
-    """Модель рейтинга сервиса. """
+    """Модель рейтинга сервиса."""
 
-    user = models.ForeignKey(
-        CustomUser,
-        on_delete=models.CASCADE
-    )
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE
-    )
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
     stars = models.IntegerField(
-        choices=[(1, '1 star'),
-                 (2, '2 stars'),
-                 (3, '3 stars'),
-                 (4, '4 stars'),
-                 (5, '5 stars')]
+        choices=[
+            (1, "1 star"),
+            (2, "2 stars"),
+            (3, "3 stars"),
+            (4, "4 stars"),
+            (5, "5 stars"),
+        ]
     )
