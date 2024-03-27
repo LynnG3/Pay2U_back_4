@@ -173,5 +173,5 @@ SPECTACULAR_SETTINGS = {
 CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",
     "https://158.160.20.211",
-    "https://pay2u.myddns.me/",
+    "https://pay2u.myddns.me",
 ]
