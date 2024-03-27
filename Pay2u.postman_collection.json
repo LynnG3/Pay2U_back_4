@@ -1,0 +1,112 @@
+{
+	"info": {
+		"_postman_id": "8fc69b6d-d2f8-4cc8-a11e-d965e047abb5",
+		"name": "Pay2u",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "30366787"
+	},
+	"item": [
+		{
+			"name": "https://pay2u.myddns.me/api/v1/users/",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "admin@example.com",
+							"type": "text"
+						},
+						{
+							"key": "phone_number",
+							"value": "+7999555000",
+							"type": "text"
+						},
+						{
+							"key": "username",
+							"value": "AdminPay2u",
+							"type": "text"
+						},
+						{
+							"key": "first_name",
+							"value": "Denis",
+							"type": "text"
+						},
+						{
+							"key": "last_name",
+							"value": "Den",
+							"type": "text"
+						},
+						{
+							"key": "surname",
+							"value": "EAr",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "qwerty12345q",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://pay2u.myddns.me/api/v1/users/",
+					"protocol": "https",
+					"host": [
+						"pay2u",
+						"myddns",
+						"me"
+					],
+					"path": [
+						"api",
+						"v1",
+						"users",
+						""
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "https://pay2u.myddns.me/api/v1/token/login/",
+			"request": {
+				"method": "POST",
+				"header": [],
+				"body": {
+					"mode": "formdata",
+					"formdata": [
+						{
+							"key": "email",
+							"value": "admin@example.com",
+							"type": "text"
+						},
+						{
+							"key": "password",
+							"value": "qwerty12345q",
+							"type": "text"
+						}
+					]
+				},
+				"url": {
+					"raw": "https://pay2u.myddns.me/api/v1/token/login/",
+					"protocol": "https",
+					"host": [
+						"pay2u",
+						"myddns",
+						"me"
+					],
+					"path": [
+						"api",
+						"v1",
+						"token",
+						"login",
+						""
+					]
+				}
+			},
+			"response": []
+		}
+	]
+}
