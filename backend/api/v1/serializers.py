@@ -68,10 +68,15 @@ class CategorySerializer(serializers.ModelSerializer):
     """Сериализатор категории."""
 
     image = Base64ImageField()
+    cashback = serializers.SerializerMethodField()
 
     class Meta:
         model = Category
-        fields = ("id", "image", "title")
+        fields = ("id", "image", "title", "cashback")
+
+    def get_cashback(self, obj):
+        """Получение макс кешбэка из сервисов в данной категории."""
+        pass
 
 
 class ServiceSerializer(serializers.ModelSerializer):
@@ -80,11 +85,9 @@ class ServiceSerializer(serializers.ModelSerializer):
     is_subscribed = serializers.SerializerMethodField()
     image = Base64ImageField()
 
-    def get_subscriptions(self, obj):
+    def is_subscribed(self, obj):
         """Получение своих подписок."""
         request = self.context.get("request")
-        if request is None or request.user.is_anonymous:
-            return False
         user = request.user
         return Subscription.objects.filter(service=obj, user=user).exists()
 
