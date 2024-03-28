@@ -82,7 +82,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "title",
             "max_cashback",
         )
-        
+
     def get_max_cashback(self, obj):
         max_cashback = obj.category.annotate(
             max_cashback=Max('category__service_set__cashback')
@@ -93,7 +93,6 @@ class CategorySerializer(serializers.ModelSerializer):
 class NewPopularSerializer(serializers.ModelSerializer):
     """Cериализатор чтения сервисов
     для каталогов - новинки и популярное."""
-
 
     image = Base64ImageField()
 
@@ -121,10 +120,11 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
     expire_date = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
 
-    def get_expire_date(self):
+    def get_expire_date(self, obj):
         """Получение даты следуюещй оплаты."""
 
-        return Subscription.objects.get(expire_date)
+        # return Subscription.objects.get(expire_date)
+        return obj.expire_date
 
     def get_activation_status(self, obj):
         """Получение статуса подписки."""
