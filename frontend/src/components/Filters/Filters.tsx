@@ -1,5 +1,5 @@
 import { Box } from '@mui/material';
-import FilterSelect from './FilterSelect/FilterSelect';
+// import FilterSelect from './FilterSelect/FilterSelect';
 import FilterSlide from './FilterSlide/FilterSlide';
 
 export default function Filters() {

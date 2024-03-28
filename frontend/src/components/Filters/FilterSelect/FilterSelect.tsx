@@ -5,13 +5,14 @@ import { Box, Typography } from '@mui/material';
 import FiltersPopupSelect from '../FiltersPopupSelect/FiltersPopupSelect';
 import { useState } from 'react';
 
-interface FilterSelectProps {
-  onClick: (selectedOption: string) => void;
-}
+// interface FilterSelectProps {
+//   onClick: (selectedOption: string) => void;
+// }
 
-export default function FilterSelect({ onClick }: FilterSelectProps) {
+export default function FilterSelect() {
   const [open, setOpen] = useState<boolean>(false);
   const [selectedOption, setSelectedOption] = useState('');
+  console.log(selectedOption);
 
   const styles = {
     container: { position: 'relative', width: '175px' },
@@ -33,7 +34,7 @@ export default function FilterSelect({ onClick }: FilterSelectProps) {
     }
   };
 
-  const handleSelectOption = option => {
+  const handleSelectOption = (option: string) => {
     setSelectedOption(option);
   };
 

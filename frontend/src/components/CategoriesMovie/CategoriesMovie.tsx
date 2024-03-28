@@ -3,10 +3,10 @@ import Search from '../Search/Search';
 import { SubscriptionsCardCatalogMovieData } from '../../utils/constants.tsx';
 import CardCatalog from '../CardCatalog/CardCatalog.tsx';
 import Filters from '../Filters/Filters.tsx';
-import { useNavigate } from 'react-router-dom';
+// import { useNavigate } from 'react-router-dom';
 
 export default function CategoriesMovie() {
-  const navigate = useNavigate();
+  // const navigate = useNavigate();
 
   const styles = {
     container: { margin: '24px 20px 0', position: 'relative' }
