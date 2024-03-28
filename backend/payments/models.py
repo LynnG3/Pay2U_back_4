@@ -22,7 +22,9 @@ class Tariff(models.Model):
     kind = models.ForeignKey(
         'TariffKind',
         on_delete=models.SET_NULL,
+        null=True,
         verbose_name="Разновидность тарифа по длительности",
+        related_name='tariffs'
     )
     description = models.TextField(
         verbose_name="Описание"
@@ -95,6 +97,7 @@ class Payment(models.Model):
     )
     phone_number = models.CharField(
         verbose_name="Номер телефона",
+        max_length=11,
         blank=True,
     )
     # card = способ оплаты
