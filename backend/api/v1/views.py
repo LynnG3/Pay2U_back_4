@@ -6,21 +6,30 @@ import datetime
 import random
 import string
 
+from api.v1.permissions import IsOwner
+from api.v1.serializers import (
+    CategorySerializer,
+    CustomUserSerializer,
+    NewPopularSerializer,
+    RatingSerializer,
+    ServiceSerializer,
+    SubscribedServiceSerializer,
+    SubscriptionSerializer,
+)
 from django.contrib.auth import get_user_model
+from django.shortcuts import get_list_or_404
+
 # from django.shortcuts import redirect
 from djoser.views import UserViewSet
+from drf_spectacular.utils import extend_schema
 from rest_framework import status, viewsets
+
 # from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from api.v1.permissions import IsOwner
-from api.v1.serializers import (CategorySerializer, CustomUserSerializer,
-                                NewPopularSerializer, RatingSerializer,
-                                ServiceSerializer, SubscribedServiceSerializer,
-                                SubscriptionSerializer)
 # from payments.models import AutoPayment, Tarif, SellHistory
 from services.models import Category, Rating, Service, Subscription
 
@@ -44,50 +53,50 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     Обрабатывает запросы к главной странице,
     каталогам сервисов и странице отдельного сервиса.
     """
-
-    queryset = Service.objects.all()
     # filterset_class = ServicesFilter
     serializer_class = ServiceSerializer
 
     def get_queryset(self):
-        queryset = self.queryset
+        return Service.objects.all()
 
-        # представления на главной странице
-        if self.request.path == "/services/":
-            if "new" in self.request.query_params:
-                queryset = Service.objects.filter(is_new=True)
-            elif "popular" in self.request.query_params:
-                queryset = Service.objects.filter(is_popular=True)
-            elif "is_subscribed" in self.request.query_params:
-                queryset = Service.objects.filter(is_subscribed=True)
-        return queryset
+    def get(self, request):
+        is_new = self.queryset.filter(new=True)
+        is_popular = self.queryset.filter(popular=True)
 
-    def list(self, request):
-        """Список категорий на главной странице для перехода по
-        каталогам категорий.
-        """
-        queryset = self.filter_queryset(self.get_queryset())
-        category_queryset = Category.objects.all()
-        context = {"request": request}
-        serializer = self.get_serializer(queryset, context=context, many=True)
-        category_serializer = CategorySerializer(category_queryset, many=True)
+        is_new_data = NewPopularSerializer(is_new, many=True).data
+        is_popular_data = NewPopularSerializer(is_popular, many=True).data
+
         data = {
-            "services": serializer.data,
-            "categories": category_serializer.data,
+            "is_new": is_new_data,
+            "is_popular": is_popular_data,
         }
         return Response(data)
 
-    def get_serializer_class(self):
-        if self.request.path == "/services/":
-            if "is_subscribed" in self.request.query_params:
-                return SubscribedServiceSerializer
-            elif (
-                "new" in self.request.query_params
-                or "popular" in self.request.query_params
-            ):
-                return NewPopularSerializer
-            return ServiceSerializer
-        return super().get_serializer_class()
+    # def get_queryset(self):
+    #     queryset = Service.objects.all()
+    #     # представления на главной странице
+    #     if "new" in self.request.query_params:
+    #         queryset = queryset.filter(new=True)
+    #     if "popular" in self.request.query_params:
+    #         queryset = queryset.filter(popular=True)
+    #     if "is_subscribed" in self.request.query_params:
+    #         queryset = queryset.filter(is_subscribed=True)
+    #     return queryset
+
+    # def list(self, request):
+    #     """Список категорий на главной странице для перехода по
+    #     каталогам категорий.
+    #     """
+    #     queryset = self.filter_queryset(self.get_queryset())
+    #     category_queryset = Category.objects.all()
+    #     context = {"request": request}
+    #     serializer = self.get_serializer(queryset, context=context, many=True)
+    #     category_serializer = CategorySerializer(category_queryset, many=True)
+    #     data = {
+    #         "services": serializer.data,
+    #         "categories": category_serializer.data,
+    #     }
+    #     return Response(data)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -100,9 +109,6 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         queryset = self.get_queryset()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
-    def get_queryset(self):
-        return self.queryset
 
 
 class SubscribeView(APIView):

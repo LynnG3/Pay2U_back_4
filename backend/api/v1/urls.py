@@ -1,11 +1,15 @@
+from api.v1.views import (
+    CategoryViewSet,
+    CustomUserViewSet,
+    ServiceViewSet,
+    SubscribeView,
+    SubscriptionPaidView,
+    SubscriptionPaymentView,
+    SubscriptionViewSet,
+)
 from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import routers
-
-from .views import CategoryViewSet  # CustomUserViewSet,; HistoryViewSet
-from .views import (CustomUserViewSet, ServiceViewSet, SubscribeView,
-                    SubscriptionPaidView, SubscriptionPaymentView,
-                    SubscriptionViewSet)
 
 router_v1 = routers.DefaultRouter()
 # router_v1.register(r'autopayments', AutoPaymentViewSet)
@@ -14,8 +18,10 @@ router_v1.register(r"users", CustomUserViewSet, basename="users")
 # router_v1.register(r'history', HistoryViewSet)
 # # мб sell_history не нужен, если прикрутить его к SubscriptionPaymentView
 # router_v1.register(r'sell_history', SellHistoryViewSet)
-router_v1.register(r"services", ServiceViewSet)
-router_v1.register(r"subscriptions", SubscriptionViewSet)
+router_v1.register(r"services", ServiceViewSet, basename="services")
+router_v1.register(
+    r"subscriptions", SubscriptionViewSet, basename="subscriptions"
+)
 
 
 urlpatterns = [
