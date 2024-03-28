@@ -1,16 +1,4 @@
-FROM node:18 as build
-# WORKDIR /app
-#
-# COPY package.json package.json
-# COPY package-lock.json package-lock.json
-#
-# RUN npm install
-#
-# COPY . .
-# RUN npm run tsc
-# RUN npm install --global http-server
-#
-# CMD ["npx", "-y", "http-server", "-p", "8000", "/app/build"]
+FROM node:21-slim as build
 
 WORKDIR /app
 COPY package*.json ./
