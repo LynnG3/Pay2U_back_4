@@ -30,7 +30,7 @@ services:
     env_file: ./backend/.env
     volumes:
       - static:/result_build/
-    command: cp -r /app/build/. /result_build/
+    command: cp -r /app/dist/. /result_build/
     depends_on:
       - db
 
