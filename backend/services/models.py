@@ -1,14 +1,16 @@
 import datetime
-# from typing import Optional
+from random import choices
+from typing import Optional
+
 
 # from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.signals import post_save
+
 # from django.forms import MultiValueField, CharField, MultiWidget, TextInput
 from django.dispatch import receiver
-
 from users.models import CustomUser
 
 # from django.core.validators import MaxValueValidator, MinValueValidator
@@ -21,12 +23,13 @@ class Category(models.Model):
     image = models.ImageField(
         "Ссылка на изображение",
         upload_to="categories/images/",
-        null=True, default=None
+        null=True,
+        default=None,
     )
 
     class Meta:
-        verbose_name = "категория"
-        verbose_name_plural = "категории"
+        verbose_name = "Категория"
+        verbose_name_plural = "Категории"
         ordering = ("title",)
 
     def __str__(self):
@@ -66,9 +69,12 @@ class Service(models.Model):
     image = models.ImageField(
         "Ссылка на изображение",
         upload_to="services/images/",
-        null=True, default=None
+        null=True,
+        default=None,
     )
-    text = models.TextField(verbose_name="Описание")
+    text = models.TextField(
+        "Описание",
+    )
     cost = models.PositiveIntegerField(
         "Стоимость подписки",
     )
@@ -117,7 +123,11 @@ class Service(models.Model):
 
 class Subscription(models.Model):
     """Модель подписки юзера на сервисы."""
-
+    ACTIVATION_CHOICES = (
+        (1, "Активирована"),
+        (2, "недействительна"),
+        (3, "ожидает активации"),
+    )
     user = models.ForeignKey(
         CustomUser, related_name="subscriptions", on_delete=models.CASCADE
     )
@@ -126,11 +136,11 @@ class Subscription(models.Model):
     )
     payment_status = models.BooleanField(default=False)
     # но если это подписка - значит она уже оплачена? поле не нужно?
-    # activation_status = чойс поле и сюда привязать поле которое
-    # будtт выдават дату подписки можно через ресивер как только
-    # стату меняется на актив
-    # мы заполняем дэейт тайм тудей и этот день записывается.
-    # В этот момент дата истечения становится через таймдельта месяц
+    activation_status = models.PositiveSmallIntegerField(
+        "Статус активации подписки",
+        choices=ACTIVATION_CHOICES,
+    )
+    # ожидает активации/активна/недействительна
     # или 3 булевых поля отдельно?
     # дата сообщения еще за 3 дня до экспайрд
     # если вэйтинг то ничего не делаем а если неактивна деактивейт
