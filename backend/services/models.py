@@ -2,10 +2,11 @@ import datetime
 from random import choices
 from typing import Optional
 
+
 # from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
 from django.db import models
-from django.db.models import Exists, OuterRef, UniqueConstraint
+from django.db.models import UniqueConstraint
 from django.db.models.signals import post_save
 
 # from django.forms import MultiValueField, CharField, MultiWidget, TextInput
@@ -35,19 +36,19 @@ class Category(models.Model):
         return self.title
 
 
-class ServiceQuerySet(models.QuerySet):
-    """Вспомогательная модель отображения
-    отметки "вы подписаны" для списка сервисов.
-    """
+# class ServiceQuerySet(models.QuerySet):
+#     """Вспомогательная модель отображения
+#     отметки "вы подписаны" для списка сервисов.
+#     """
 
-    def add_user_annotations(self, user_id: Optional[int]):
-        return self.annotate(
-            is_subscribed=Exists(
-                Subscription.objects.filter(
-                    user_id=user_id, service__pk=OuterRef("pk")
-                )
-            ),
-        )
+#     def add_user_annotations(self, user_id: Optional[int]):
+#         return self.annotate(
+#             is_subscribed=Exists(
+#                 Subscription.objects.filter(
+#                     user_id=user_id, service__pk=OuterRef("pk")
+#                 )
+#             ),
+#         )
 
 
 class Service(models.Model):
@@ -88,7 +89,7 @@ class Service(models.Model):
         verbose_name="Дата добавления", auto_now_add=True, db_index=True
     )
 
-    objects = ServiceQuerySet.as_manager()
+    # objects = ServiceQuerySet.as_manager()
 
     class Meta:
         ordering = ("-pub_date",)
@@ -141,6 +142,12 @@ class Subscription(models.Model):
     )
     # ожидает активации/активна/недействительна
     # или 3 булевых поля отдельно?
+    # дата сообщения еще за 3 дня до экспайрд
+    # если вэйтинг то ничего не делаем а если неактивна деактивейт
+    # то подписка не выдается
+    # метол прикрутить если акт статус меняется на актив
+    # то прописывается дата полписки и дата истечения.
+    # Експайр дату потом привяжем к пуш увед
     # subscribed_date = models.DateField(auto_now_add=True)
     promo_code = models.CharField(max_length=12, blank=True, null=True)
     expiry_date = models.DateField(blank=True, null=True)
@@ -156,6 +163,11 @@ class Subscription(models.Model):
 def update_user_subscriptions_count(sender, instance, **kwargs):
     user = instance.user
     user.subscriptions_count = user.subscriptions.count()
+    if user.subscriptions_count >= 50:
+        services = Service.objects.filter(subscriptions__user=user)
+        for service in services:
+            service.popular = True
+            service.save()
     user.save()
 
 

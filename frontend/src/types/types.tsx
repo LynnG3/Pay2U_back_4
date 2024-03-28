@@ -62,3 +62,44 @@ export interface CardCatalogSubscriptionsData {
   raiting: number;
   per: string;
 }
+
+export interface CardMySubscriptionsWaitActiveyData {
+  image: string;
+  alt: string;
+  title: string;
+  period: string;
+}
+
+export interface CardMySubscriptionsActiveData {
+  image: string;
+  alt: string;
+  title: string;
+  description?: string;
+  period: string;
+  sum: string;
+  activeUntill: string;
+  isActive?: boolean;
+}
+
+export interface CardManageSubscriptionData {
+  image: string;
+  alt: string;
+  title: string;
+  description: string;
+  period: string;
+  isActive?: boolean;
+}
+
+export interface BtnManageSubscriptionData {
+  image: string;
+  alt: string;
+  title: string;
+  borderColor?: string;
+}
+
+export interface CardAutopaymentData {
+  image: string;
+  alt: string;
+  number?: string;
+  title: string;
+}

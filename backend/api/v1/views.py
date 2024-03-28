@@ -97,7 +97,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     #         "categories": category_serializer.data,
     #     }
     #     return Response(data)
-
+    
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление категорий - кино, музыка, книги итд."""

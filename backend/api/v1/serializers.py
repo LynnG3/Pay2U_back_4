@@ -82,7 +82,7 @@ class CategorySerializer(serializers.ModelSerializer):
             "title",
             "max_cashback",
         )
-
+        
     def get_max_cashback(self, obj):
         max_cashback = obj.category.annotate(
             max_cashback=Max('category__service_set__cashback')
@@ -93,6 +93,7 @@ class CategorySerializer(serializers.ModelSerializer):
 class NewPopularSerializer(serializers.ModelSerializer):
     """Cериализатор чтения сервисов
     для каталогов - новинки и популярное."""
+
 
     image = Base64ImageField()
 

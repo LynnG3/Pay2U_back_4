@@ -20,8 +20,12 @@ export default function ServicesCatalog() {
       gridAutoFlow: 'column',
       columnGap: '61px',
       rowGap: '10px',
-      margin: '24px 0 0'
+      margin: '24px 0 0',
+      overflowX: 'auto',
+      whiteSpace: 'nowrap',
+      scrollbarWidth: 'none'
     },
+
     title: {
       fontFamily: 'Inter',
       fontWeight: '700',
@@ -48,6 +52,7 @@ export default function ServicesCatalog() {
   return (
     <Box sx={styles.container}>
       <Title title={ServicesCatalogData.title} all={ServicesCatalogData.all} link="/catalog" />
+
       <Box sx={styles.card}>
         {ServicesCatalogCardData.cards.map((card, index) => (
           <ServicesCatalogCard
