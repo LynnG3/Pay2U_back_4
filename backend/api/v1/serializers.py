@@ -1,4 +1,7 @@
 """Сериализатор для приложений services, payments и users. """
+import random
+import string
+from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Max
@@ -6,7 +9,9 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+
 from services.models import Category, Rating, Service, Subscription
+from payments.models import Payment
 
 # from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
@@ -117,14 +122,13 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
     на которые подписан пользователь,
     отображаемой в баннере на главной странице.
     """
-    expire_date = serializers.SerializerMethodField()
+    expiry_date = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
 
-    def get_expire_date(self, obj):
+    def get_expiry_date(self, obj):
         """Получение даты следуюещй оплаты."""
 
-        # return Subscription.objects.get(expire_date)
-        return obj.expire_date
+        return Subscription.objects.get('expire_date')
 
     def get_activation_status(self, obj):
         """Получение статуса подписки."""
@@ -136,7 +140,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = (
             "image",
-            "expire_date",
+            "expiry_date",
             "activation_status",
         )  # "next_sum",
 
@@ -194,7 +198,40 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     #     return Subscription.objects.filter(service=obj, user=user).exists()
 
 
+class PaymentSerializer(serializers.ModelSerializer):
+    """Cериализатор оплаты подписки ."""
+
+    class Meta:
+        model = Payment
+        fields = "__all__"
+
+
+class PromocodeSerializer(serializers.ModelSerializer):
+    """Cериализатор страницы с промокодом ."""
+
+    promo_code = serializers.SerializerMethodField()
+    promo_code_expiry_date = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            "total",
+            "promo_code",
+            "promo_code_expiry_date"
+        )
+
+    def get_promo_code(self, obj):
+        promo_code = "".join(
+            random.choices(string.ascii_letters + string.digits, k=12)
+        )
+        return promo_code
+
+    def get_promo_code_expiry_date(self, obj):
+        return obj.payment_date + timedelta(days=7)
+
+
 class RatingSerializer(serializers.ModelSerializer):
+
     class Meta:
         model = Rating
         fields = "__all__"
