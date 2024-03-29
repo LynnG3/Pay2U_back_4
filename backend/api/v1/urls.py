@@ -37,7 +37,7 @@ urlpatterns = [
     #     {"get": "list"}
     # ), name="categories"),
     path("catalog/", ServiceViewSet.as_view(
-        {"get": "get_queryset"}
+        {"get": "list"}
     ), name="catalog"),
     # path(
     #     "catalog_new/",
@@ -55,6 +55,9 @@ urlpatterns = [
     #     name="catalog_category",
     # ),
     path("subscribe/", SubscribeView.as_view(), name="subscribe"),
+    # path(
+    # 'subscription/payment/', SubscriptionPaymentView.as_view(), name='subscription_payment'),
+    # path('subscription/paid/', SubscriptionPaidView.as_view(), name='subscription_paid'),
     path(
         "subscription_payment/",
         SubscriptionPaymentView.as_view(),
