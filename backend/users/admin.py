@@ -51,6 +51,27 @@ class CustomUserAdmin(UserAdmin):
         )}),
     )
 
+    add_fieldsets = (
+        (None, {
+            'classes': ('wide',),
+            'fields': (
+                'username',
+                'password1',
+                'password2',
+                'first_name',
+                'last_name',
+                'email',
+                'phone_number',
+                'surname',
+                'is_active',
+                'is_staff',
+                'is_superuser',
+                'groups',
+                'user_permissions'
+            )
+        }),
+    )
+
     def subscriptions_count(self, obj):
         return obj.subscriptions.count()
     subscriptions_count.short_description = 'Количество подписок'
