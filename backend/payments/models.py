@@ -2,75 +2,86 @@ from django.db import models
 from django.utils import timezone
 
 from services.models import Service
-# from users.models import CustomUser
 
 
-class Tariff(models.Model):
-    """Модель тарифа для подписки."""
+CALLBACK_CHOICES = (
+    ("accepted", "Принят"),
+    ("denied", "Отклонен"),
+)
 
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        verbose_name="Сервис",
-    )
-    name = models.CharField(
-        max_length=50,
-        verbose_name="Название сервиса"
-    )
-    # поле kind здесь нужно для реализации сортировки
-    # по ценовой категрии тарифов от меньш к больш
-    kind = models.ForeignKey(
-        'TariffKind',
-        on_delete=models.SET_NULL,
-        null=True,
-        verbose_name="Разновидность тарифа по длительности",
-        related_name='tariffs'
-    )
-    description = models.TextField(
-        verbose_name="Описание"
-    )
-    cashback = models.PositiveIntegerField(
-        "Кэшбэк (в процентах)",
-    )
+DISCOUNT = 0.75
 
-    class Meta:
-        ordering = ("-kind__cost_per_month",)
-        verbose_name = "Тариф"
-
-    def __str__(self):
-        return self.name
+DURATION_CHOICES = (
+    (1, '1 месяц'),
+    (3, '3 месяца'),
+    (6, '6 месяцев'),
+    (12, '12 месяцев')
+)
 
 
 class TariffKind(models.Model):
     """Модель разновидности тарифа по длительности."""
 
-    tariff = models.ForeignKey(
-        Tariff,
-        on_delete=models.CASCADE,
-        verbose_name="Тариф",
-        related_name='tariff_kinds'
+    # тип поля service здесь многие ко многим -
+    # тк например 2 сервиса (кинопоиск + амедиатека) -
+    # 4 варианта по длительности
+    service = models.ManyToManyField(
+        Service,
+        verbose_name="Сервис",
+    )
+    name = models.CharField(
+        max_length=50,
+        null=True,
+        default=None,
+        verbose_name="Название тарифа"
     )
     duration = models.PositiveIntegerField(
-        "Длительность подписки в месяцах ",
+        verbose_name="Длительность подписки в месяцах ",
+        choices=DURATION_CHOICES,
     )
-    cost_per_month = models.PositiveIntegerField(
-        "Стоимость в месяц",
+    cost_per_month = models.IntegerField(
+        verbose_name="Стоимость в месяц",
+        default=199
+    )
+    cost_total = models.IntegerField(
+        verbose_name="Стоимость за период",
+        default=199
+    )
+    description = models.TextField(
+        verbose_name="Описание тарифа",
+        null=True
+    )
+    cashback = models.PositiveIntegerField(
+        "Кэшбэк (в процентах)",
+        default=5
     )
     comment_1 = models.TextField(
-        verbose_name="Инфо порядок оплаты"
+        verbose_name="Частота оплаты",
+        null=True
     )
-    # или лучше в сериализатор и рассчитывать по формуле
-    # cost_per_month * duration ?
-    comment_2 = models.PositiveIntegerField(
-        verbose_name="Инфо стоимость далее"
+    comment_2 = models.TextField(
+        verbose_name="Стоимость далее",
+        null=True
     )
 
     class Meta:
-        ordering = ("-duration",)
+        ordering = ("-cost_per_month",)
         verbose_name = "Разновидность тарифа"
 
+    def calculate_cost_per_month(self, duration):
+        """Вычисляет цену за месяц в завис. от длительности подписки."""
+        return int(self.cost_per_month * DISCOUNT ** (duration - 1))
+
     def save(self, *args, **kwargs):
-        self.comment_2 = self.cost_per_month * self.duration
+        """Сохраняет итоговые значения в завсисмости
+        от вычисленной цены за месяц. Выводит комментарии об условиях тарифа.
+        """
+        self.cost_per_month = self.calculate_cost_per_month(self.duration)
+        self.cost_total = self.cost_per_month * self.duration
+        self.comment_1 = (
+            f'Далее {self.cost_total} при оплате раз в {self.duration} мес.'
+        )
+        self.comment_2 = f'Далее {self.cost_total}'
         super(TariffKind, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -106,10 +117,6 @@ class Payment(models.Model):
         verbose_name="Согласие с правилами",
     )
     # заглушка для ответа банка
-    CALLBACK_CHOICES = (
-        ("accepted", "Принят"),
-        ("denied", "Отклонен"),
-    )
     callback = models.CharField(
         max_length=10,
         choices=CALLBACK_CHOICES,
