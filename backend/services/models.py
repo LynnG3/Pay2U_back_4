@@ -1,4 +1,5 @@
 import datetime
+from random import choices
 from typing import Optional
 
 # from django.contrib.auth import get_user_model

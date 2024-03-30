@@ -12,22 +12,14 @@ from api.v1.serializers import (
     CustomUserSerializer,
     NewPopularSerializer,
     RatingSerializer,
-<<<<<<< Updated upstream
     PaymentSerializer,
     ServiceSerializer,
     PromocodeSerializer,
-=======
-    ServiceSerializer,
->>>>>>> Stashed changes
     SubscribedServiceSerializer,
     SubscriptionSerializer,
 )
 from django.contrib.auth import get_user_model
-<<<<<<< Updated upstream
 # from django.shortcuts import get_list_or_404
-=======
-from django.shortcuts import get_list_or_404
->>>>>>> Stashed changes
 
 # from django.shortcuts import redirect
 from djoser.views import UserViewSet
@@ -127,7 +119,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     #         "categories": category_serializer.data,
     #     }
     #     return Response(data)
-    
+
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление категорий - кино, музыка, книги итд."""
@@ -141,11 +133,7 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-<<<<<<< Updated upstream
 class SubscribeView(GenericAPIView):
-=======
-class SubscribeView(APIView):
->>>>>>> Stashed changes
     """Оформление подписки на сервис."""
 
     serializer_class = SubscriptionSerializer
