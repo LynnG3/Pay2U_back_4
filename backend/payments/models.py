@@ -9,7 +9,7 @@ class Tariff(models.Model):
     """Модель тарифа для подписки."""
 
     service = models.ForeignKey(
-        Service,
+        to=Service,
         on_delete=models.CASCADE,
         verbose_name="Сервис",
     )
@@ -20,7 +20,7 @@ class Tariff(models.Model):
     # поле kind здесь нужно для реализации сортировки
     # по ценовой категрии тарифов от меньш к больш
     kind = models.ForeignKey(
-        'TariffKind',
+        to='TariffKind',
         on_delete=models.SET_NULL,
         null=True,
         verbose_name="Разновидность тарифа по длительности",

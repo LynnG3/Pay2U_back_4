@@ -23,6 +23,14 @@ router_v1.register(
 # router_v1.register(r'history', HistoryViewSet)
 # история платежей юзера:
 # router_v1.register(r'sell_history', SellHistoryViewSet)
+<<<<<<< Updated upstream
+=======
+router_v1.register(r"services", ServiceViewSet, basename="services")
+router_v1.register(
+    r"subscriptions", SubscriptionViewSet, basename="subscriptions"
+)
+
+>>>>>>> Stashed changes
 
 urlpatterns = [
     # url(r'^auth/', include('djoser.urls')),

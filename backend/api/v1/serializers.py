@@ -1,7 +1,10 @@
 """Сериализатор для приложений services, payments и users. """
+<<<<<<< Updated upstream
 import random
 import string
 from datetime import timedelta
+=======
+>>>>>>> Stashed changes
 
 from django.contrib.auth import get_user_model
 from django.db.models import Max
@@ -9,7 +12,6 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-
 from services.models import Category, Rating, Service, Subscription
 from payments.models import Payment
 
@@ -122,6 +124,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
     на которые подписан пользователь,
     отображаемой в баннере на главной странице.
     """
+<<<<<<< Updated upstream
     expiry_date = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
 
@@ -129,6 +132,15 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
         """Получение даты следуюещй оплаты."""
 
         return Subscription.objects.get('expire_date')
+=======
+    expire_date = serializers.SerializerMethodField()
+    activation_status = serializers.SerializerMethodField()
+
+    def get_expire_date(self):
+        """Получение даты следуюещй оплаты."""
+
+        return Subscription.objects.get(expire_date)
+>>>>>>> Stashed changes
 
     def get_activation_status(self, obj):
         """Получение статуса подписки."""
@@ -140,7 +152,11 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
         model = Service
         fields = (
             "image",
+<<<<<<< Updated upstream
             "expiry_date",
+=======
+            "expire_date",
+>>>>>>> Stashed changes
             "activation_status",
         )  # "next_sum",
 
