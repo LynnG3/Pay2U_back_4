@@ -1,33 +1,56 @@
 from django.contrib import admin
-from django.contrib.auth.admin import UserAdmin
-
-from users.models import CustomUser
+from django.contrib.auth import get_user_model
 from services.models import Subscription
 
-
+User = get_user_model()
+LIMIT_POSTS_PER_PAGE = 15
 class SubscriptionInline(admin.TabularInline):
     'Таблица с подписками пользователей. '
 
     model = Subscription
-    fields = ['service', 'payment_status', 'activation_status', 'expiry_date']
+    fields = [
+        'service',
+        'payment_status',
+        'activation_status',
+    ]
 
 
-@admin.register(CustomUser)
-class CustomUserAdmin(UserAdmin):
+@admin.register(User)
+class UserAdmin(admin.ModelAdmin):
 
     inlines = [SubscriptionInline]
     list_display = (
-        'username',
-        'first_name',
-        'last_name',
-        'email',
-        'phone_number',
-        'surname',
-        'subscriptions_count'
+        "username",
+        "first_name",
+        "last_name",
+        "surname",
+        "email",
+        "phone_number",
+        "subscriptions_count",
     )
-    list_filter = ('username', 'email', 'phone_number',)
-    search_fields = ('username', 'email', 'phone_number',)
+    list_editable = (
+        "first_name",
+        "last_name",
+        "surname",
+    )
+    list_filter = (
+        "username",
+        "email",
+        "phone_number",
+        "last_name",
+    )
+    search_fields = (
+        "username",
+        "email",
+        "phone_number",
+    )
+    list_display_links = (
+        "username",
+        "email",
+        "phone_number",
+    )
     ordering = ('username',)
+    list_per_page = LIMIT_POSTS_PER_PAGE
 
     fieldsets = (
         (None, {'fields': ('username', 'password')}),

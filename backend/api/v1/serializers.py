@@ -1,4 +1,5 @@
 """Сериализатор для приложений services, payments и users. """
+import datetime
 import random
 import string
 from datetime import timedelta
@@ -7,7 +8,7 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from payments.models import Payment
+from payments.models import Cashback, Payment, TariffKind
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
 from services.models import Category, Rating, Service, Subscription
@@ -38,12 +39,15 @@ class Meta:
 class CreateCustomUserSerializer(UserCreateSerializer):
     """Сериализатор для создания кастомной модели пользователя."""
 
+    def validate(self, attrs):
+        attrs.pop("uid", None)
+        return super().validate(attrs)
+
     class Meta:
         model = User
         fields = (
             "email",
             "phone_number",
-            "id",
             "username",
             "first_name",
             "last_name",
@@ -88,9 +92,9 @@ class CategorySerializer(serializers.ModelSerializer):
         )
 
     def get_max_cashback(self, obj):
-        max_cashback = obj.category.annotate(
-            max_cashback=Max('category__service_set__cashback')
-        )
+        max_cashback = obj.service_set.aggregate(
+            max_cashback=Max('cashback_percantage')
+        )["max_cashback"]
         return max_cashback
 
 
@@ -106,13 +110,45 @@ class NewPopularSerializer(serializers.ModelSerializer):
             "id",
             "name",
             "image",
-            "cashback",
+            "cashback_percentage",
         )
         read_only_fields = (
             "id",
             "name",
             "image",
-            "cashback",
+            "cashback_percentage",
+        )
+
+
+class ShortHistorySerializer(serializers.ModelSerializer):
+    """Сериализатор истории покупок, для главного меню."""
+
+    accumulated = serializers.SerializerMethodField()
+    total_spent = serializers.SerializerMethodField()
+
+    def get_accumulated(self, obj):
+        """Получение накопленного кэшбека для главной страницы."""
+
+        user = self.context.get("request").user
+        cashbacks = Cashback.objects.filter(payment__user=user)
+        accumulated = sum([cashback.amount for cashback in cashbacks])
+        return accumulated
+
+    def get_total_spent(self, obj):
+        """Получение суммы потраченных средств для главной страницы."""
+
+        user = self.context.get("request").user
+        payments = Payment.objects.filter(user=user)
+        total_spent = sum(
+            [payment.tarrif_kind.cost_total for payment in payments]
+        )
+        return total_spent
+
+    class Meta:
+        model = Payment
+        fields = (
+            "accumulated",
+            "total_spent",
         )
 
 
@@ -121,13 +157,11 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
     на которые подписан пользователь,
     отображаемой в баннере на главной странице.
     """
-    expiry_date = serializers.SerializerMethodField()
+
+    image = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
-
-    def get_expiry_date(self, obj):
-        """Получение даты следуюещй оплаты."""
-
-        return Subscription.objects.get('expire_date')
+    nearest_payment_date = serializers.SerializerMethodField()
+    next_payment_amount = serializers.SerializerMethodField()
 
     def get_activation_status(self, obj):
         """Получение статуса подписки."""
@@ -135,41 +169,81 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
         user = self.context.get("request").user
         return Subscription.objects.filter(service=obj, user=user).exists()
 
+    def get_image(self, obj):
+        """Получение картинок для банннера подписок юзера."""
+
+        user = self.context.get("request").user
+        return (
+            Subscription.objects.filter(user=user, service=obj)
+            .values("image")
+            .first()
+            .get("image")
+        )
+
+    def get_nearest_payment_date(self, obj):
+        user = self.context.get("request").user
+        nearest_payment_date = (
+            Payment.objects.filter(user=user, service=obj)
+            .order_by("next_payment_date")
+            .first()
+        )
+        if nearest_payment_date:
+            return PaymentSerializer(nearest_payment_date).data
+        return None
+
+    def get_next_payment_amount(self, obj):
+        user = self.context.get("request").user
+        next_payment_amount = (
+            Payment.objects.filter(user=user, service=obj)
+            .order_by("next_payment_date")
+            .first()
+            .next_payment_amount
+        )
+        if next_payment_amount:
+            return PaymentSerializer(next_payment_amount)
+        return None
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        return data
+
     class Meta:
         model = Service
         fields = (
             "image",
-            "expiry_date",
             "activation_status",
-        )  # "next_sum",
+            "nearest_payment_date",
+            "next_payment_amount",
+        )
 
 
-class ServiceSerializer(serializers.ModelSerializer):
+class ServiceMainPageSerializer(serializers.ModelSerializer):
     """Получение инфо о сервисе."""
 
-    is_subscribed = SubscribedServiceSerializer(many=True)
-    image = Base64ImageField()
+    is_subscribed = SubscribedServiceSerializer(
+        many=True,
+        source="subscriptions",
+    )
     categories = CategorySerializer(many=True)
     new = NewPopularSerializer(many=True)
     popular = NewPopularSerializer(many=True)
-
-    # def get_is_subscribed(self, obj):
-    #     """Получение своих подписок."""
-    #     user = self.context.get("request").user
-    #     return Subscription.objects.filter(service=obj, user=user).exists()
+    short_history = ShortHistorySerializer(source="payment_services")
 
     class Meta:
         model = Service
         fields = (
-            "name",
-            "image",
-            "text",
-            "cost",
-            "cashback",
             "is_subscribed",
+            "short_history",
+            "categories",
             "new",
             "popular",
+        )
+        read_only_fields = (
+            "is_subscribed",
+            "short_history",
             "categories",
+            "new",
+            "popular",
         )
 
 
@@ -203,6 +277,18 @@ class PaymentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Payment
         fields = "__all__"
+
+    def create(self, validated_data):
+        next_payment_date = validated_data.get("pub_date") + 30
+        tariffs_payment = validated_data.get("tariff_kind")
+        next_payment_amount = tariffs_payment.cost_total
+        if validated_data.get("callback") is True:
+            payment = Payment.objects.create(
+                next_payment_amount, next_payment_date, **validated_data
+            )
+            return payment
+        else:
+            return super().create(validated_data)
 
 
 class PromocodeSerializer(serializers.ModelSerializer):
