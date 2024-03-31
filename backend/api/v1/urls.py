@@ -1,4 +1,8 @@
-from api.v1.views import (
+from django.urls import include, path
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
+from rest_framework import routers
+
+from .views import (
     CategoryViewSet,
     CustomUserViewSet,
     ServiceViewSet,
@@ -7,9 +11,6 @@ from api.v1.views import (
     SubscriptionPaymentView,
     SubscriptionViewSet,
 )
-from django.urls import include, path
-from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
-from rest_framework import routers
 
 router_v1 = routers.DefaultRouter()
 # router_v1.register(r'payments', PaymentViewSet)
