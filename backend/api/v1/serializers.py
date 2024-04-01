@@ -38,11 +38,6 @@ class Meta:
 
 class CreateCustomUserSerializer(UserCreateSerializer):
     """Сериализатор для создания кастомной модели пользователя."""
-
-    def validate(self, attrs):
-        attrs.pop("uid", None)
-        return super().validate(attrs)
-
     class Meta:
         model = User
         fields = (
