@@ -24,9 +24,9 @@ services:
   frontend:
     image: ${DOCKERHUB_USERNAME}/${PROJECT_NAME}_frontend
     env_file: .env
-    command: cp -r /app/build/. /frontend_static/
+    command: cp -r /app/dist/. /static_frontend/
     volumes:
-      - static:/frontend_static/
+      - static:/static_frontend
     depends_on:
       - db
 
@@ -35,7 +35,7 @@ services:
     env_file: .env
     volumes:
       - static:/staticfiles/
-      - media:/mediafiles/
+      - media:/media/
     ports:
       - 8000:80
     depends_on:

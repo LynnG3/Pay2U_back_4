@@ -1,74 +1,102 @@
+from django.contrib.auth import get_user_model
 from django.db import models
-from django.utils import timezone
-
 from services.models import Service
-# from users.models import CustomUser
 
+User = get_user_model()
 
-class Tariff(models.Model):
-    """Модель тарифа для подписки."""
+CALLBACK_CHOICES = (
+    ("accepted", "Принят"),
+    ("denied", "Отклонен"),
+)
 
-    service = models.ForeignKey(
-        Service,
-        on_delete=models.CASCADE,
-        verbose_name="Сервис",
-    )
-    name = models.CharField(
-        max_length=50,
-        verbose_name="Название сервиса"
-    )
-    # поле kind здесь нужно для реализации сортировки
-    # по ценовой категрии тарифов от меньш к больш
-    kind = models.ForeignKey(
-        'TariffKind',
-        on_delete=models.SET_NULL,
-        verbose_name="Разновидность тарифа по длительности",
-    )
-    description = models.TextField(
-        verbose_name="Описание"
-    )
-    cashback = models.PositiveIntegerField(
-        "Кэшбэк (в процентах)",
-    )
+DISCOUNT = 0.75
 
-    class Meta:
-        ordering = ("-kind__cost_per_month",)
-        verbose_name = "Тариф"
+DURATION_CHOICES = (
+    (1, '1 месяц'),
+    (3, '3 месяца'),
+    (6, '6 месяцев'),
+    (12, '12 месяцев')
+)
 
-    def __str__(self):
-        return self.name
+CASHBACK_CHOICES = ()
 
 
 class TariffKind(models.Model):
     """Модель разновидности тарифа по длительности."""
 
-    tariff = models.ForeignKey(
-        Tariff,
-        on_delete=models.CASCADE,
-        verbose_name="Тариф",
-        related_name='tariff_kinds'
+    # тип поля service здесь многие ко многим -
+    # тк например 2 сервиса (кинопоиск + амедиатека) -
+    # 4 варианта по длительности
+    service = models.ManyToManyField(
+        Service,
+        verbose_name="Сервис",
+        related_name="tariffs_services",
+    )
+    name = models.CharField(
+        max_length=50,
+        null=True,
+        blank=True,
+        default=None,
+        verbose_name="Название тарифа",
     )
     duration = models.PositiveIntegerField(
-        "Длительность подписки в месяцах ",
+        choices=DURATION_CHOICES,
+        verbose_name="Длительность подписки в месяцах ",
+        editable=True,
     )
-    cost_per_month = models.PositiveIntegerField(
-        "Стоимость в месяц",
+    cost_per_month = models.IntegerField(
+        default=199,
+        verbose_name="Стоимость в месяц",
+        editable=True,
+    )
+    cost_total = models.IntegerField(
+        default=199,
+        verbose_name="Стоимость за период",
+        editable=True,
+    )
+    description = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Описание тарифа",
+        editable=True,
+    )
+    cashback = models.PositiveIntegerField(
+        default=5,
+        verbose_name="Кэшбэк (в процентах)",
+        editable=True,
     )
     comment_1 = models.TextField(
-        verbose_name="Инфо порядок оплаты"
+        null=True,
+        blank=True,
+        verbose_name="Частота оплаты",
+        editable=True,
     )
-    # или лучше в сериализатор и рассчитывать по формуле
-    # cost_per_month * duration ?
-    comment_2 = models.PositiveIntegerField(
-        verbose_name="Инфо стоимость далее"
+    comment_2 = models.TextField(
+        null=True,
+        blank=True,
+        verbose_name="Стоимость далее",
+        editable=True,
     )
 
     class Meta:
-        ordering = ("-duration",)
-        verbose_name = "Разновидность тарифа"
+        ordering = ("-cost_per_month",)
+        verbose_name = "Тариф"
+        verbose_name_plural = "Тарифы"
+
+    def calculate_cost_per_month(self, duration):
+        """Вычисляет цену за месяц в завис. от длительности подписки."""
+        return int(self.cost_per_month * DISCOUNT ** (duration - 1))
 
     def save(self, *args, **kwargs):
-        self.comment_2 = self.cost_per_month * self.duration
+        """Сохраняет итоговые значения в завсисмости
+        от вычисленной цены за месяц. Выводит комментарии об условиях тарифа.
+        """
+        self.cost_per_month = self.calculate_cost_per_month(self.duration)
+        self.cost_total = self.cost_per_month * self.duration
+        self.comment_1 = (
+            f'Далее {self.cost_total} при оплате раз в {self.duration} мес.'
+        )
+        self.comment_2 = f'Далее {self.cost_total}'
         super(TariffKind, self).save(*args, **kwargs)
 
     def __str__(self):
@@ -80,42 +108,44 @@ class Payment(models.Model):
     Будет использвана также для истории платежей.
     """
 
+    user = models.ForeignKey(
+        User,
+        on_delete=models.CASCADE,
+        verbose_name="Плательщик",
+        related_name="payment_users",
+    )
     service = models.ForeignKey(
         Service,
         on_delete=models.CASCADE,
         verbose_name="Сервис",
+        related_name="payment_services",
     )
     tariff_kind = models.ForeignKey(
         TariffKind,
         on_delete=models.CASCADE,
         verbose_name="Выбранный тариф",
+        related_name="payment_tariffs",
     )
     total = models.PositiveIntegerField(
-        verbose_name="Общая стоимость"
+        verbose_name="Общая стоимость",
     )
-    phone_number = models.CharField(
-        verbose_name="Номер телефона",
-        blank=True,
-    )
-    # card = способ оплаты
     accept_rules = models.BooleanField(
         default=False,
         verbose_name="Согласие с правилами",
     )
     # заглушка для ответа банка
-    CALLBACK_CHOICES = (
-        ("accepted", "Принят"),
-        ("denied", "Отклонен"),
-    )
     callback = models.CharField(
         max_length=10,
         choices=CALLBACK_CHOICES,
         verbose_name="Ответ от банка",
     )
     payment_date = models.DateTimeField(
+        auto_now_add=True,
+        db_index=True,
         verbose_name="Дата оплаты",
-        auto_now_add=True, db_index=True
     )
+    next_payment_date = models.DateField()
+    next_payment_amount = models.PositiveIntegerField()
 
     class Meta:
         ordering = ["-payment_date"]
@@ -133,26 +163,18 @@ class Payment(models.Model):
 class Cashback(models.Model):
     """Модель кешбэка."""
 
-    payment = models.ForeignKey(
+    payment = models.OneToOneField(
         Payment,
         on_delete=models.CASCADE,
         verbose_name="Платеж",
-        related_name='cashbacks'
+        related_name="cashbacks",
+    )
+    amount = models.DecimalField(
+        "Сумма кешбэка",
+        max_digits=8,
+        decimal_places=2,
     )
 
     class Meta:
         verbose_name = "Кешбэк"
-
-    @classmethod
-    def calculate_total_cashback_rub(cls, user):
-        start_date = timezone.now().replace(day=1) - timezone.timedelta(days=1)
-        end_date = start_date.replace(day=1)
-        user_payments = Payment.objects.filter(
-            service__subscriptions__user=user,
-            payment_date__range=(end_date, start_date)
-        )
-        total_cashback_rub = sum(
-            payment.total * (payment.tariff_kind.tariff.cashback / 100)
-            for payment in user_payments
-        )
-        return total_cashback_rub
+        verbose_name_plural = "Кешбэк"

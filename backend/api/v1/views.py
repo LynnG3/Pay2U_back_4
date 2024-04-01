@@ -1,37 +1,28 @@
-# from django.http import FileResponse
-# from django.shortcuts import get_object_or_404
-# from django_filters.rest_framework import DjangoFilterBackend
-# from api.filters import ServicesFilter
 import datetime
-import random
-import string
 
-from api.v1.permissions import IsOwner
-from api.v1.serializers import (
-    CategorySerializer,
-    CustomUserSerializer,
-    NewPopularSerializer,
-    RatingSerializer,
-    ServiceSerializer,
-    SubscribedServiceSerializer,
-    SubscriptionSerializer,
-)
 from django.contrib.auth import get_user_model
-from django.shortcuts import get_list_or_404
-
-# from django.shortcuts import redirect
 from djoser.views import UserViewSet
-from drf_spectacular.utils import extend_schema
+from payments.models import Payment
 from rest_framework import status, viewsets
-
-# from rest_framework.authtoken.models import Token
 from rest_framework.decorators import action
+from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-
-# from payments.models import AutoPayment, Tarif, SellHistory
 from services.models import Category, Rating, Service, Subscription
+
+from .permissions import IsOwner
+from .serializers import (
+    CategorySerializer,
+    CreateCustomUserSerializer,
+    CustomUserSerializer,
+    PaymentSerializer,
+    PromocodeSerializer,
+    RatingSerializer,
+    ServiceMainPageSerializer,
+    SubscribedServiceSerializer,
+    SubscriptionSerializer,
+)
 
 User = get_user_model()
 
@@ -46,58 +37,26 @@ class CustomUserViewSet(UserViewSet):
             return (IsAuthenticated(),)
         return super().get_permissions()
 
-
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление главной страницы,
     списков сервисов и отдельного сервиса,
     Обрабатывает запросы к главной странице,
     каталогам сервисов и странице отдельного сервиса.
     """
-    # filterset_class = ServicesFilter
-    serializer_class = ServiceSerializer
+
+    serializer_class = ServiceMainPageSerializer
+    queryset = Service.objects.all()
 
     def get_queryset(self):
-        return Service.objects.all()
+        return Service.objects.filter(pub_date__lte=datetime.datetime.now())
 
-    def get(self, request):
-        is_new = self.queryset.filter(new=True)
-        is_popular = self.queryset.filter(popular=True)
+    def list(self, request):
+        services = self.get_queryset()
+        serializer = SubscribedServiceSerializer(
+            services, many=True, context={"request": request}
+        )
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-        is_new_data = NewPopularSerializer(is_new, many=True).data
-        is_popular_data = NewPopularSerializer(is_popular, many=True).data
-
-        data = {
-            "is_new": is_new_data,
-            "is_popular": is_popular_data,
-        }
-        return Response(data)
-
-    # def get_queryset(self):
-    #     queryset = Service.objects.all()
-    #     # представления на главной странице
-    #     if "new" in self.request.query_params:
-    #         queryset = queryset.filter(new=True)
-    #     if "popular" in self.request.query_params:
-    #         queryset = queryset.filter(popular=True)
-    #     if "is_subscribed" in self.request.query_params:
-    #         queryset = queryset.filter(is_subscribed=True)
-    #     return queryset
-
-    # def list(self, request):
-    #     """Список категорий на главной странице для перехода по
-    #     каталогам категорий.
-    #     """
-    #     queryset = self.filter_queryset(self.get_queryset())
-    #     category_queryset = Category.objects.all()
-    #     context = {"request": request}
-    #     serializer = self.get_serializer(queryset, context=context, many=True)
-    #     category_serializer = CategorySerializer(category_queryset, many=True)
-    #     data = {
-    #         "services": serializer.data,
-    #         "categories": category_serializer.data,
-    #     }
-    #     return Response(data)
-    
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление категорий - кино, музыка, книги итд."""
@@ -111,10 +70,11 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
         return Response(serializer.data)
 
 
-class SubscribeView(APIView):
+class SubscribeView(GenericAPIView):
     """Оформление подписки на сервис."""
 
-    # мб лучше к ServiceViewSet с декоратором и/или миксином?
+    serializer_class = SubscriptionSerializer
+    queryset = Subscription.objects.all()
 
     def post(self, request):
         service_id = request.data.get("service_id")
@@ -127,8 +87,11 @@ class SubscribeView(APIView):
             return Response(status=status.HTTP_404_NOT_FOUND)
 
 
-class SubscriptionPaymentView(APIView):
+class SubscriptionPaymentView(GenericAPIView):
     """Оплата подписки на сервис."""
+
+    serializer_class = PaymentSerializer
+    queryset = Payment.objects.all()
 
     def post(self, request):
         # логика оплаты (ввод карты и получение ответа от банка)- ???
@@ -136,6 +99,7 @@ class SubscriptionPaymentView(APIView):
         # типа оплата прошла
         # или разобр как запросить ответ у стороннего сервера,закомментить это
         if callback:
+            # надо переадресовать на страницу с промокодом
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(
@@ -147,21 +111,23 @@ class SubscriptionPaymentView(APIView):
 
 
 class SubscriptionPaidView(APIView):
-    """Страница с промокодом после успешной оплаты подписки."""
+    """Страница с промокодом - открывается
+    после успешной оплаты подписки."""
 
     def post(self, request):
-        subscription = Subscription.objects.get(
-            user=request.user,
-            payment_status=True
+        total = request.data.get('total')
+        serializer = PromocodeSerializer(data={'total': total})
+        serializer.is_valid(raise_exception=True)
+        promo_code = serializer.data.get('promo_code')
+        promo_code_expiry_date = serializer.data.get('promo_code_expiry_date')
+
+        return Response(
+            {
+                'promo_code': promo_code,
+                'promo_code_expiry_date': promo_code_expiry_date,
+            },
+            status=status.HTTP_200_OK,
         )
-        promo_code = "".join(
-            random.choices(string.ascii_letters + string.digits, k=12)
-        )
-        expiry_date = datetime.date.today() + datetime.timedelta(days=30)
-        subscription.promo_code = promo_code
-        subscription.expiry_date = expiry_date
-        subscription.save()
-        return Response(status=status.HTTP_200_OK)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):
@@ -209,7 +175,7 @@ class RatingViewSet(viewsets.ModelViewSet):
             return [IsOwner()]
         return [IsAuthenticated()]
 
-    @action(detail=False, methods=["put"])
+    @action(detail=True, methods=["put"])
     def update_rating(self, request):
         data = request.data
         try:
@@ -220,10 +186,10 @@ class RatingViewSet(viewsets.ModelViewSet):
             rating.save()
             return Response(
                 {"message": "Rating updated successfully"},
-                status=status.HTTP_200_OK
+                status=status.HTTP_200_OK,
             )
         except Rating.DoesNotExist:
             return Response(
                 {"error": "Rating does not exist"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )

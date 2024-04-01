@@ -127,7 +127,7 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           passphrase: ${{ secrets.SSH_PASSPHRASE }}
           source: "docker-compose.production.yml"
-          target: "pay2u_back_4"
+          target: "pay2u"
       - name: Executing remote ssh commands to deploy
         uses: appleboy/ssh-action@master
         with:
@@ -140,6 +140,8 @@ jobs:
             sudo docker compose -f docker-compose.production.yml pull
             sudo docker compose -f docker-compose.production.yml down
             sudo docker compose -f docker-compose.production.yml up -d
+            docker rmi $(docker images -a -q)
             sudo docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-            sudo docker-compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
+            sudo docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic --noinput
             sudo docker compose -f docker-compose.production.yml exec backend cp -r /app/static/. /static_backend/static/
+            sudo docker compose -f docker-compose.production.yml exec backend bash create_superuser_script.sh
