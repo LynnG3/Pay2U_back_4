@@ -1,14 +1,18 @@
 import { Box, Typography } from '@mui/material';
-import InstructionIcon from '../../../assets/InstructionIcon.svg?react';
+import QuestionIcon from '../../../assets/QuestionIcon.svg?react';
 import { InstructionData } from '../../../utils/constants';
 import { Link } from 'react-router-dom';
 
-export default function ServicesInstruction() {
+interface SubscribeInstructionProps {
+  margin?: string;
+  title?: string;
+}
+
+export default function SubscribtionInstruction({ margin, title }: SubscribeInstructionProps) {
   const styles = {
     container: {
       display: 'flex',
-      alignItems: 'center',
-      marginTop: '24px'
+      alignItems: 'center'
     },
     title: {
       color: '#489865',
@@ -17,20 +21,20 @@ export default function ServicesInstruction() {
       fontWeight: '500'
     },
     icon: {
-      width: '15px',
+      width: '20px',
       height: '20px',
-      marginRight: '9px'
+      marginRight: '6px'
     },
     link: {
       textDecoration: 'none'
     }
   };
   return (
-    <Box sx={styles.container}>
-      <InstructionIcon style={styles.icon} />
-      <Link to="/history" style={styles.link}>
+    <Box sx={{ ...styles.container, margin: margin ? margin : '14px 20px 20px' }}>
+      <QuestionIcon style={styles.icon} />
+      <Link to="" style={styles.link}>
         <Typography sx={styles.title} component="h3">
-          {InstructionData.titleServise}
+          {title ? title : InstructionData.titleSubscribe}
         </Typography>
       </Link>
     </Box>

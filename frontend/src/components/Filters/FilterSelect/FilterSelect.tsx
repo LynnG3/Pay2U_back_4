@@ -5,10 +5,6 @@ import { Box, Typography } from '@mui/material';
 import FiltersPopupSelect from '../FiltersPopupSelect/FiltersPopupSelect';
 import { useState } from 'react';
 
-// interface FilterSelectProps {
-//   onClick: (selectedOption: string) => void;
-// }
-
 export default function FilterSelect() {
   const [open, setOpen] = useState<boolean>(false);
   const [selectedOption, setSelectedOption] = useState('');

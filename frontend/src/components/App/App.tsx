@@ -9,15 +9,30 @@ import CatalogSubscriptions from '../CatalogSubscriptions/CatalogSubscriptions';
 import CategoriesMovie from '../CategoriesMovie/CategoriesMovie';
 import MySubscriptions from '../MySubscriptions/MySubscriptions';
 import ManageSubscription from '../ManageSubscription/ManageSubscription';
-
+// import { useEffect, useState } from 'react';
+// import * as Api from '../../utils/utils';
 import Autopayment from '../Autopayment/Autopayment';
+import Subscribe from '../Subscribe/Subscribe';
+import AboutSubscribe from '../AboutSubscribe/AboutSubscribe';
 
 const AppRouter: React.FC = () => {
   const location = useLocation();
+  // const [service, setService] = useState('');
 
   if (location.pathname === '/') {
     return <Navigate to="/history" replace />;
   }
+
+  // useEffect(() => {
+  //   Api.getServices()
+  //     .then(data => {
+  //       setService(data);
+  //       console.log('Services', data);
+  //     })
+  //     .catch(err => {
+  //       console.log(err);
+  //     });
+  // }, []);
 
   return (
     <main>
@@ -31,6 +46,8 @@ const AppRouter: React.FC = () => {
         <Route path="/subscriptions" element={<MySubscriptions />} />
         <Route path="/manage_subcription" element={<ManageSubscription />} />
         <Route path="/autopayment" element={<Autopayment />} />
+        <Route path="/subscribe" element={<Subscribe />} />
+        <Route path="/subscribe/id" element={<AboutSubscribe />} />
       </Routes>
     </main>
   );
