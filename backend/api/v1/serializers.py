@@ -153,7 +153,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
     отображаемой в баннере на главной странице.
     """
 
-    image = serializers.SerializerMethodField()
+    # image = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
     nearest_payment_date = serializers.SerializerMethodField()
     next_payment_amount = serializers.SerializerMethodField()
@@ -164,16 +164,16 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
         user = self.context.get("request").user
         return Subscription.objects.filter(service=obj, user=user).exists()
 
-    def get_image(self, obj):
-        """Получение картинок для банннера подписок юзера."""
-
-        user = self.context.get("request").user
-        return (
-            Subscription.objects.filter(user=user, service=obj)
-            .values("image")
-            .first()
-            .get("image")
-        )
+    # def get_image(self, obj):
+    #     """Получение картинок для банннера подписок юзера."""
+    #
+    #     user = self.context.get("request").user
+    #     return (
+    #         Subscription.objects.filter(user=user, service=obj)
+    #         .values("image")
+    #         .first()
+    #         .get("image")
+    #     )
 
     def get_nearest_payment_date(self, obj):
         user = self.context.get("request").user
@@ -192,7 +192,6 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
             Payment.objects.filter(user=user, service=obj)
             .order_by("next_payment_date")
             .first()
-            .next_payment_amount
         )
         if next_payment_amount:
             return PaymentSerializer(next_payment_amount)
