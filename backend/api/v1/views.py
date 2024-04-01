@@ -37,12 +37,6 @@ class CustomUserViewSet(UserViewSet):
             return (IsAuthenticated(),)
         return super().get_permissions()
 
-    def get_serializer(self, *args, **kwargs):
-        if self.request.method == "POST":
-            return CreateCustomUserSerializer
-        return super().get_serializer(*args, **kwargs)
-
-
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление главной страницы,
     списков сервисов и отдельного сервиса,
