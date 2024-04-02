@@ -52,7 +52,6 @@ class PaymentAdmin(admin.ModelAdmin):
 
     list_display = (
         "tariff_kind",
-        "payment_date",
         "next_payment_date",
     )
     fields = (
@@ -61,7 +60,6 @@ class PaymentAdmin(admin.ModelAdmin):
             "tariff_kind",
         ),
         (
-            "payment_date",
             "next_payment_date",
             "next_payment_amount",
         ),
