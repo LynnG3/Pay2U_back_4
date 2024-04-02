@@ -153,7 +153,7 @@ class Payment(models.Model):
         verbose_name_plural = "Платежи"
 
     def save(self, *args, **kwargs):
-        self.total = self.tariff_kind.comment_2
+        self.total = int(self.tariff_kind.comment_2.replace()[1])
         super(Payment, self).save(*args, **kwargs)
 
     def __str__(self):
