@@ -1,5 +1,5 @@
 """Сериализатор для приложений services, payments и users. """
-import datetime
+# import datetime
 import random
 import string
 from datetime import timedelta
@@ -8,10 +8,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from payments.models import Cashback, Payment, TariffKind
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
+
 from services.models import Category, Rating, Service, Subscription
+from payments.models import Payment, Cashback  # TariffKind
+
 
 # from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
@@ -309,36 +311,24 @@ class PromocodeSerializer(serializers.ModelSerializer):
         return obj.payment_date + timedelta(days=7)
 
 
-class PaymentSerializer(serializers.ModelSerializer):
-    """Cериализатор оплаты подписки ."""
-
-    class Meta:
-        model = Payment
-        fields = "__all__"
-
-
-class PromocodeSerializer(serializers.ModelSerializer):
-    """Cериализатор страницы с промокодом ."""
-
-    promo_code = serializers.SerializerMethodField()
-    promo_code_expiry_date = serializers.SerializerMethodField()
+class SellHistorySerializer(serializers.ModelSerializer):
+    service_name = serializers.CharField(source="service.name")
+    service_image = Base64ImageField()(source="service.image")
+    payment_date = serializers.DateField(format="%d.%m.%y")
+    amount = serializers.DecimalField(
+        max_digits=8,
+        decimal_places=2,
+        source="cashbacks.amount"
+    )
 
     class Meta:
         model = Payment
         fields = (
-            "total",
-            "promo_code",
-            "promo_code_expiry_date"
+            "service_name",
+            "service_image",
+            "payment_date",
+            "amount"
         )
-
-    def get_promo_code(self, obj):
-        promo_code = "".join(
-            random.choices(string.ascii_letters + string.digits, k=12)
-        )
-        return promo_code
-
-    def get_promo_code_expiry_date(self, obj):
-        return obj.payment_date + timedelta(days=7)
 
 
 class RatingSerializer(serializers.ModelSerializer):
