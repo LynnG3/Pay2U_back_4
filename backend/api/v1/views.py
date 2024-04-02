@@ -9,12 +9,17 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from services.models import Category, Rating, Service, Subscription
+from services.models import (
+    Category,
+    Rating,
+    Service,
+    Subscription,
+)
 
 from .permissions import IsOwner
 from .serializers import (
     CategorySerializer,
-    CreateCustomUserSerializer,
+    # CreateCustomUserSerializer,
     CustomUserSerializer,
     PaymentSerializer,
     PromocodeSerializer,
@@ -22,6 +27,7 @@ from .serializers import (
     ServiceMainPageSerializer,
     SubscribedServiceSerializer,
     SubscriptionSerializer,
+    SellHistorySerializer
 )
 
 User = get_user_model()
@@ -36,6 +42,7 @@ class CustomUserViewSet(UserViewSet):
         if self.action == "me":
             return (IsAuthenticated(),)
         return super().get_permissions()
+
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление главной страницы,
@@ -99,7 +106,7 @@ class SubscriptionPaymentView(GenericAPIView):
         # типа оплата прошла
         # или разобр как запросить ответ у стороннего сервера,закомментить это
         if callback:
-            # надо переадресовать на страницу с промокодом
+            # надо переадресовать на страницу с промокодом ?или куда еще
             return Response(status=status.HTTP_200_OK)
         else:
             return Response(
@@ -107,7 +114,7 @@ class SubscriptionPaymentView(GenericAPIView):
                 status=status.HTTP_404_NOT_FOUND,
             )
         # обработать ошибку иначе и переадресовать
-        # на кастомный шаблон error/bank или error/nomoney
+        # на кастомный шаблон error/bank  НЕ ДЕЛАЕМ
 
 
 class SubscriptionPaidView(APIView):
@@ -128,6 +135,14 @@ class SubscriptionPaidView(APIView):
             },
             status=status.HTTP_200_OK,
         )
+
+
+class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = SellHistorySerializer
+
+    def get_queryset(self):
+        user = self.request.user  # Получаем текущего пользователя
+        return Payment.objects.filter(user=user)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):

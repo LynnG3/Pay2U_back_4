@@ -5,6 +5,7 @@ from rest_framework import routers
 from .views import (
     CategoryViewSet,
     CustomUserViewSet,
+    SellHistoryViewSet,
     ServiceViewSet,
     SubscribeView,
     SubscriptionPaidView,
@@ -23,7 +24,7 @@ router_v1.register(
 # сториз онбординг:
 # router_v1.register(r'history', HistoryViewSet)
 # история платежей юзера:
-# router_v1.register(r'sell_history', SellHistoryViewSet)
+router_v1.register(r'sell_history', SellHistoryViewSet)
 
 urlpatterns = [
     # url(r'^auth/', include('djoser.urls')),
@@ -56,9 +57,6 @@ urlpatterns = [
     #     name="catalog_category",
     # ),
     path("subscribe/", SubscribeView.as_view(), name="subscribe"),
-    # path(
-    # 'subscription/payment/', SubscriptionPaymentView.as_view(), name='subscription_payment'),
-    # path('subscription/paid/', SubscriptionPaidView.as_view(), name='subscription_paid'),
     path(
         "subscription_payment/",
         SubscriptionPaymentView.as_view(),
