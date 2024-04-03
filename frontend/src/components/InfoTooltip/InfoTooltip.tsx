@@ -1,20 +1,45 @@
-import './InfoTooltip.css';
-import { Tooltip, Box, ClickAwayListener } from '@mui/material';
-import InfoIcon from '../../assets/InfoIcon.svg?react';
-import { useState } from 'react';
+import {
+  Tooltip,
+  Box,
+  ClickAwayListener,
+  Typography,
+  TooltipProps,
+  tooltipClasses,
+  styled,
+  CardMedia
+} from '@mui/material';
+import React, { useState } from 'react';
 
 interface InfoTooltipProps {
   tooltip?: string;
+  icon?: string;
 }
 
-export default function InfoTooltip({ tooltip }: InfoTooltipProps) {
-  const [open, setOpen] = useState(false);
+const TextTooltip = styled(({ className, ...props }: TooltipProps) => (
+  <Tooltip {...props} classes={{ popper: className }} />
+))(({ theme }) => ({
+  [`& .${tooltipClasses.tooltip}`]: {
+    backgroundColor: '#E86513',
+    color: '#F5F5F5',
+    maxWidth: 311,
+    fontSize: theme.typography.pxToRem(12),
+    margin: '20px'
+  },
+  [`& .${tooltipClasses.arrow}`]: {
+    color: '#E86513'
+  }
+}));
 
-  const styles = {
-    container: {
-      position: 'relative'
-    }
-  };
+const font = { fontFamily: 'Inter', fontWeight: '400', fontSize: '14px', lineHeight: '1.25' };
+
+const styles = {
+  container: {
+    position: 'relative'
+  }
+};
+
+export default function InfoTooltip({ tooltip, icon }: InfoTooltipProps) {
+  const [open, setOpen] = useState(false);
 
   const handleClick = () => {
     setOpen(!open);
@@ -27,22 +52,26 @@ export default function InfoTooltip({ tooltip }: InfoTooltipProps) {
   return (
     <ClickAwayListener onClickAway={handleTooltipClose}>
       <Box sx={styles.container}>
-        <Tooltip
+        <TextTooltip
           arrow
           disableFocusListener
           disableHoverListener
           disableTouchListener
-          title={tooltip}
           open={open}
           onClose={() => setOpen(false)}
           onClick={handleClick}
-          placement="bottom"
-          className="text"
+          title={
+            <React.Fragment>
+              <Typography component="p" sx={{ ...font, padding: '0' }}>
+                {tooltip}
+              </Typography>
+            </React.Fragment>
+          }
         >
           <Box sx={{ display: 'flex', alignItems: 'start' }}>
-            <InfoIcon />
+            {icon && <CardMedia component="img" image={icon} />}
           </Box>
-        </Tooltip>
+        </TextTooltip>
       </Box>
     </ClickAwayListener>
   );
