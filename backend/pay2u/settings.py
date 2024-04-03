@@ -104,7 +104,7 @@ else:
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.getenv("POSTGRES_DB", "pay2u_db"),
             "USER": os.getenv("POSTGRES_USER", "pay2u_admin"),
-            "PASSWORD": os.getenv("POSTFRES_PASSWORD", "secret_password"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "secret_password"),
             "HOST": os.getenv("DB_HOST", ""),
             "PORT": os.getenv("DB_PORT", 5432),
         }
