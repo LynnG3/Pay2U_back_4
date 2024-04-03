@@ -24,7 +24,9 @@ router_v1.register(
 # сториз онбординг:
 # router_v1.register(r'history', HistoryViewSet)
 # история платежей юзера:
-router_v1.register(r'sell_history', SellHistoryViewSet)
+router_v1.register(
+    r'sell_history', SellHistoryViewSet, basename="sell_history"
+)
 
 urlpatterns = [
     # url(r'^auth/', include('djoser.urls')),

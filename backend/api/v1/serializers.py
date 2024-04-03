@@ -8,12 +8,10 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from payments.models import Cashback, Payment  # TariffKind
 from rest_framework import serializers
 from rest_framework.authtoken.models import Token
-
 from services.models import Category, Rating, Service, Subscription
-from payments.models import Payment, Cashback  # TariffKind
-
 
 # from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
@@ -313,7 +311,7 @@ class PromocodeSerializer(serializers.ModelSerializer):
 
 class SellHistorySerializer(serializers.ModelSerializer):
     service_name = serializers.CharField(source="service.name")
-    service_image = Base64ImageField()(source="service.image")
+    service_image = Base64ImageField(source="payment_services.image")
     payment_date = serializers.DateField(format="%d.%m.%y")
     amount = serializers.DecimalField(
         max_digits=8,
