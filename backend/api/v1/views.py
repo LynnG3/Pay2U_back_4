@@ -13,7 +13,7 @@ from rest_framework.views import APIView
 from services.models import Category, Rating, Service, Subscription
 
 from .permissions import IsOwner
-from .serializers import (  # CreateCustomUserSerializer,
+from .serializers import (
     CategorySerializer,
     CustomUserSerializer,
     PaymentSerializer,
@@ -53,12 +53,12 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
     def get_queryset(self):
         return Service.objects.filter(pub_date__lte=datetime.datetime.now())
 
-    def list(self, request):
-        services = self.get_queryset()
-        serializer = SubscribedServiceSerializer(
-            services, many=True, context={"request": request}
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
+    # def list(self, request):
+    #     services = self.get_queryset()
+    #     serializer = SubscribedServiceSerializer(
+    #         services, many=True, context={"request": request}
+    #     )
+    #     return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):

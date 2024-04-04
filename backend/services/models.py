@@ -1,8 +1,7 @@
 import datetime
 
-# from django.contrib.auth import get_user_model
-# from django.core.validators import MinValueValidator
-from django.apps import apps
+from django.contrib.auth import get_user_model
+from django.core.validators import URLValidator
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.signals import post_save
@@ -19,6 +18,7 @@ from users.models import CustomUser
 
 
 # TariffKind = apps.get_model('services', 'TariffKind')
+User = get_user_model()
 
 
 class Category(models.Model):
@@ -47,6 +47,7 @@ class Service(models.Model):
     category = models.ForeignKey(
         Category,
         on_delete=models.SET_NULL,
+        related_name="services",
         verbose_name="категория",
         max_length=30,
         blank=True,
@@ -73,13 +74,15 @@ class Service(models.Model):
     )
     new = models.BooleanField(default=True)
     popular = models.BooleanField(default=False)
-    # popular  - в сериализаторе или вью сделать счетчик подписчиков
-    # функция если больше ??? меняется на True
     pub_date = models.DateTimeField(
         verbose_name="Дата добавления", auto_now_add=True, db_index=True
     )
-
-    # objects = ServiceQuerySet.as_manager()
+    partners_link = models.TextField(
+        verbose_name="сайт партнера",
+        validators=[
+            URLValidator(),
+        ],
+    )
 
     class Meta:
         ordering = ("-pub_date",)
@@ -88,27 +91,6 @@ class Service(models.Model):
 
     def __str__(self):
         return self.name
-
-    def is_new(self):
-        """Функция-счетчик для определения, является ли сервис новым."""
-        today = datetime.date.today()
-        delta_days = (today - self.pub_date.date()).days
-        if delta_days <= 60:
-            return True
-        else:
-            return False
-
-    @property
-    def new(self):
-        return self.is_new()
-
-    @property
-    def average_rating(self):
-        ratings = Rating.objects.filter(service=self)
-        total_ratings = sum([rating.stars for rating in ratings])
-        if ratings:
-            return total_ratings / len(ratings)
-        return 0
 
 
 class Subscription(models.Model):
@@ -119,7 +101,7 @@ class Subscription(models.Model):
         (3, "ожидает активации"),
     )
     user = models.ForeignKey(
-        CustomUser, related_name="subscriptions", on_delete=models.CASCADE
+        User, related_name="subscriptions", on_delete=models.CASCADE
     )
     service = models.ForeignKey(
         Service, related_name="subscriptions", on_delete=models.CASCADE
@@ -128,7 +110,10 @@ class Subscription(models.Model):
     # # но если это подписка оплачена, поле payment_status не нужно?
     # если успеем хорошо бы менять автоматически activation_status после оплаты
     # етогда по умолчанию ????
-    autopayment = models.BooleanField(default=False, verbose_name="автоплатеж")
+    autopayment = models.BooleanField(
+        default=False,
+        verbose_name="автоплатеж",
+    )
 
     activation_status = models.PositiveSmallIntegerField(
         "Статус активации подписки",
@@ -140,12 +125,14 @@ class Subscription(models.Model):
     trial = models.BooleanField(default=False)
 
     class Meta:
+        verbose_name = "Подписка"
+        verbose_name_plural = "Подписки"
         constraints = [
             UniqueConstraint(fields=["user", "service"],
                              name="unique_subscription")
         ]
 
-
+"""
 @receiver(post_save, sender=Subscription)
 def update_user_subscriptions_count(sender, instance, **kwargs):
     user = instance.user
@@ -155,7 +142,7 @@ def update_user_subscriptions_count(sender, instance, **kwargs):
         for service in services:
             service.popular = True
             service.save()
-    user.save()
+    user.save()"""
 
 
 class Rating(models.Model):

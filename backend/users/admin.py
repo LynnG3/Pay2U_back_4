@@ -12,7 +12,6 @@ class SubscriptionInline(admin.TabularInline):
     model = Subscription
     fields = [
         'service',
-        'tariff',
         'activation_status',
     ]
 

@@ -24,11 +24,6 @@ class TariffKindAdmin(admin.ModelAdmin):
         (
             "cost_per_month",
             "cost_total",
-            "cashback",
-        ),
-        (
-            "comment_1",
-            "comment_2",
         ),
     )
     search_fields = (
@@ -58,6 +53,8 @@ class PaymentAdmin(admin.ModelAdmin):
         (
             "user",
             "tariff_kind",
+            "service",
+            "subscription",
         ),
         (
             "next_payment_date",

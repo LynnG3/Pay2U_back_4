@@ -83,7 +83,7 @@ class TariffKind(models.Model):
         super(TariffKind, self).save(*args, **kwargs)
 
     def __str__(self):
-        return self.duration
+        return str(self.duration)
 
 
 class Payment(models.Model):
