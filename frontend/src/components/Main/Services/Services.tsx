@@ -8,7 +8,11 @@ import ServicesInstruction from '../../Instructions/ServiseInstructions/Services
 import ServicesSubscription from './ServicesSubscription/ServicesSubscription';
 import { ServiceSubscribeIcon } from '../../../types/types';
 
-export default function Services({ services }: { services: ServiceSubscribeIcon[] }) {
+interface ServicesProps {
+  services: ServiceSubscribeIcon[];
+}
+
+export default function Services({ services }: ServicesProps) {
   const styles = {
     container: {
       margin: '38px 20px 78px'
