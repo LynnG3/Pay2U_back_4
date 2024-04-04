@@ -31,7 +31,7 @@ export default function App() {
       .catch(err => {
         console.log(err);
       });
-  }, [location.pathname]);
+  }, []);
 
   if (location.pathname === '/') {
     return <Navigate to="/history" replace />;

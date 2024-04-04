@@ -10,6 +10,10 @@ import BlackSquareWithCounter from '../../../../BlackSquareWithCounter/BlackSqua
 import { ServiceSubscribeIcon } from '../../../../../types/types';
 import React from 'react';
 
+interface ServicesSubscriptionCardProps {
+  services: ServiceSubscribeIcon[];
+}
+
 const font = {
   fontFamily: 'Inter',
   fontSize: '16px',
@@ -47,11 +51,7 @@ const styles = {
   }
 };
 
-export default function ServicesSubscriptionCard({
-  services
-}: {
-  services: ServiceSubscribeIcon[];
-}) {
+export default function ServicesSubscriptionCard({ services }: ServicesSubscriptionCardProps) {
   const navigate = useNavigate();
   const visibleImages = services.slice(0, 5);
   const hiddenCount = services.length - 5;

@@ -4,7 +4,11 @@ import ServicesSubscriptionHistory from './ServicesSubscriptionHistory/ServicesS
 import ServicesSubscriptionInfo from './ServicesSubscriptionInfo/ServicesSubscriptionInfo';
 import { ServiceSubscribeIcon } from '../../../../types/types';
 
-export default function ServicesSubscription({ services }: { services: ServiceSubscribeIcon[] }) {
+interface ServicesSubscriptionProps {
+  services: ServiceSubscribeIcon[];
+}
+
+export default function ServicesSubscription({ services }: ServicesSubscriptionProps) {
   const [infoVisible, setInfoVisible] = useState(true);
 
   const handleInfoClose = () => {
