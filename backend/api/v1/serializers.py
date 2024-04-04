@@ -1,5 +1,5 @@
 """Сериализатор для приложений services, payments и users. """
-# import datetime
+import datetime
 import random
 import string
 from datetime import timedelta
@@ -8,12 +8,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from payments.models import Cashback, Payment  # TariffKind
-from rest_framework import serializers
+from payments.models import Cashback, Payment, TariffKind
+from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
+from rest_framework.serializers import SerializerMethodField  # ValidationError
 from services.models import Category, Rating, Service, Subscription
 
-# from rest_framework.serializers import SerializerMethodField, ValidationError
 # from rest_framework.validators import UniqueTogetherValidator
 # from django.db.models import UniqueConstraint
 User = get_user_model()
@@ -130,6 +130,7 @@ class ShortHistorySerializer(serializers.ModelSerializer):
         return accumulated
 
     def get_total_spent(self, obj):
+        # по месяцам разбить и историю и верхнюю плашку потрачено за март
         """Получение суммы потраченных средств для главной страницы."""
 
         user = self.context.get("request").user
@@ -155,6 +156,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
 
     # image = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
+    # payment_status = serializers.SerializerMethodField()
     nearest_payment_date = serializers.SerializerMethodField()
     next_payment_amount = serializers.SerializerMethodField()
 
@@ -163,6 +165,13 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
 
         user = self.context.get("request").user
         return Subscription.objects.filter(service=obj, user=user).exists()
+
+    # def get_payment_status(self, obj):
+    #    """Полуается статус - подписан ли пользовател на сервис или нет."""
+    #
+    #    user = self.context.get("request").user
+    #    if Payment.objects.filter(service=obj, user=user).exists():
+    #        payment_status = True
 
     # def get_image(self, obj):
     #     """Получение картинок для банннера подписок юзера."""
@@ -244,45 +253,81 @@ class ServiceMainPageSerializer(serializers.ModelSerializer):
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Cериализатор подписки ."""
 
-    ACTIVATION_CHOICES = (
-        (1, "Активирована"),
-        (2, "недействительна"),
-        (3, "ожидает активации"),
-    )
+    # activation_status же уже есть в модели - нужно ли дублировать?
+    # ACTIVATION_CHOICES = (
+    #     (1, "Активирована"),
+    #     (2, "недействительна"),
+    #     (3, "ожидает активации"),
+    # )
+    # activation_status = serializers.ChoiceField(choices=ACTIVATION_CHOICES)
 
-    activation_status = serializers.ChoiceField(choices=ACTIVATION_CHOICES)
+    service = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all()
+    )
+    user = serializers.CurrentUserDefault()
+    start_date = serializers.DateTimeField(read_only=True)
+    expiry_date = serializers.DateTimeField(read_only=True)
+    tariff = serializers.PrimaryKeyRelatedField(
+        queryset=TariffKind.objects.all()
+    )
 
     class Meta:
         model = Subscription
         fields = "__all__"
 
-    # def get_activation_status(self, obj):
-    #     """Получение статуса подписки."""
-    #     request = self.context.get('request')
-    #     if request is None or request.user.is_anonymous:
-    #         return False
-    #     user = request.user
-    #     return Subscription.objects.filter(service=obj, user=user).exists()
+    def create(self, validated_data):
+        user = self.context['request'].user
+        service = validated_data['service']
+        trial = validated_data.get('trial', False)
+        subscription, created = Subscription.objects.get_or_create(
+            user=user, service=service, defaults=validated_data
+        )
+        # Проверка, существует ли подписка на пробный период
+        # и пользователь подписывается на этот сервис впервые
+        if trial and created:
+            # Установка флага пробного периода
+            validated_data['trial'] = True
+            # Установка срока окончания пробного периода
+            validated_data['expiry_date'] = (
+                datetime.date.today() + datetime.timedelta(days=30)
+            )
+            Subscription.objects.create(**validated_data)
+            return response.Response(
+                {"message": "Пробный период подключен"},
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            return subscription
 
 
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
 
+    is_trial = SerializerMethodField()
+
     class Meta:
         model = Payment
         fields = "__all__"
 
+    def get_is_trial(self, obj):
+        # Получает связанную подписку из объекта платежа
+        subscription = obj.subscription
+        # Проверяем, является ли подписка пробным периодом
+        return subscription.trial
+
     def create(self, validated_data):
-        next_payment_date = validated_data.get("pub_date") + 30
         tariffs_payment = validated_data.get("tariff_kind")
+        is_trial = self.get_is_trial(validated_data)
+        if is_trial:
+            tariffs_payment.cost_total = 1
+        next_payment_date = validated_data.get("pub_date") + 30
         next_payment_amount = tariffs_payment.cost_total
         if validated_data.get("callback") is True:
             payment = Payment.objects.create(
                 next_payment_amount, next_payment_date, **validated_data
             )
             return payment
-        else:
-            return super().create(validated_data)
+        return super().create(validated_data)
 
 
 class PromocodeSerializer(serializers.ModelSerializer):
@@ -310,8 +355,10 @@ class PromocodeSerializer(serializers.ModelSerializer):
 
 
 class SellHistorySerializer(serializers.ModelSerializer):
+    """Cериализатор истории платежей ."""
+
     service_name = serializers.CharField(source="service.name")
-    service_image = Base64ImageField(source="payment_services.image")
+    service_image = Base64ImageField(source="service.image")
     payment_date = serializers.DateField(format="%d.%m.%y")
     amount = serializers.DecimalField(
         max_digits=8,
@@ -325,6 +372,7 @@ class SellHistorySerializer(serializers.ModelSerializer):
             "service_name",
             "service_image",
             "payment_date",
+            "total",
             "amount"
         )
 

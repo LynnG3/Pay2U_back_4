@@ -1,33 +1,28 @@
 import datetime
 
 from django.contrib.auth import get_user_model
+from django.shortcuts import redirect
 from djoser.views import UserViewSet
-from payments.models import Payment
+from payments.models import Payment, TariffKind
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from services.models import (
-    Category,
-    Rating,
-    Service,
-    Subscription,
-)
+from services.models import Category, Rating, Service, Subscription
 
 from .permissions import IsOwner
-from .serializers import (
+from .serializers import (  # CreateCustomUserSerializer,
     CategorySerializer,
-    # CreateCustomUserSerializer,
     CustomUserSerializer,
     PaymentSerializer,
     PromocodeSerializer,
     RatingSerializer,
+    SellHistorySerializer,
     ServiceMainPageSerializer,
     SubscribedServiceSerializer,
     SubscriptionSerializer,
-    SellHistorySerializer
 )
 
 User = get_user_model()
@@ -53,6 +48,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = ServiceMainPageSerializer
     queryset = Service.objects.all()
+    permission_classes = (IsOwner,)
 
     def get_queryset(self):
         return Service.objects.filter(pub_date__lte=datetime.datetime.now())
@@ -88,6 +84,18 @@ class SubscribeView(GenericAPIView):
         user = request.user
         try:
             service = Service.objects.get(id=service_id)
+        #     # Проверка на наличие активной подписки ДЛЯ ПРОБНОГО ПЕРИОДА
+        #     existing_subscription = Subscription.objects.filter(user=user, service=service)
+        #     if existing_subscription.exists():
+        #         return Response(
+        #             {"message": "Вы уже подписаны"},
+        #             status=status.HTTP_400_BAD_REQUEST
+        #         )
+        #     subscription = Subscription.objects.create(user=user, service=service, trial=True)
+        #     if subscription:
+        #         return Response(status=status.HTTP_200_OK)
+        # except Service.DoesNotExist:
+        #     return Response(status=status.HTTP_404_NOT_FOUND)
             Subscription.objects.create(user=user, service=service)
             return Response(status=status.HTTP_200_OK)
         except Service.DoesNotExist:
@@ -101,20 +109,20 @@ class SubscriptionPaymentView(GenericAPIView):
     queryset = Payment.objects.all()
 
     def post(self, request):
-        # логика оплаты (ввод карты и получение ответа от банка)- ???
+        # логика оплаты - имитация
         callback = True
-        # типа оплата прошла
-        # или разобр как запросить ответ у стороннего сервера,закомментить это
+        # предполагаем, что оплата прошла успешно
         if callback:
-            # надо переадресовать на страницу с промокодом ?или куда еще
-            return Response(status=status.HTTP_200_OK)
+            return redirect("subscription_paid")
+            # return Response(
+            #     {"message": "Успешная оплата"},
+            #     status=status.HTTP_200_OK,
+            # )
         else:
             return Response(
                 {"message": "Проблема на стороне банка"},
                 status=status.HTTP_404_NOT_FOUND,
             )
-        # обработать ошибку иначе и переадресовать
-        # на кастомный шаблон error/bank  НЕ ДЕЛАЕМ
 
 
 class SubscriptionPaidView(APIView):
@@ -130,6 +138,7 @@ class SubscriptionPaidView(APIView):
 
         return Response(
             {
+                'total': total,
                 'promo_code': promo_code,
                 'promo_code_expiry_date': promo_code_expiry_date,
             },
@@ -138,7 +147,9 @@ class SubscriptionPaidView(APIView):
 
 
 class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+
     serializer_class = SellHistorySerializer
+    queryset = Payment.objects.all()
 
     def get_queryset(self):
         user = self.request.user  # Получаем текущего пользователя
@@ -151,6 +162,27 @@ class SubscriptionViewSet(viewsets.ViewSet):
     queryset = Subscription.objects.all()
     serializer_class = SubscriptionSerializer
     permission_classes = [IsOwner]
+
+    def activate_autopayment(self, request, pk=None):
+        try:
+            subscription = Subscription.objects.get(pk=pk)
+            if subscription.autopayment:
+                return Response(
+                    {"message": "Автоплатеж уже активирован"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                subscription.autopayment = True
+                subscription.save()
+                return Response(
+                    {"message": "Автоплатеж успешно активирован"},
+                    status=status.HTTP_200_OK,
+                )
+        except Subscription.DoesNotExist:
+            return Response(
+                {"message": "Подписка не найдена"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
 
     @action(detail=True, methods=["delete"])
     def unsubscribe(self, request, pk=None):
@@ -171,14 +203,40 @@ class SubscriptionViewSet(viewsets.ViewSet):
             )
 
     @action(detail=True, methods=["patch"])
-    def change_tarif(self, request, pk=None):
-        """Сменить тариф."""
-        pass
+    def autopayment(self, request, pk=None):
+        self.activate_autopayment(request, pk)
 
     @action(detail=True, methods=["patch"])
-    def autopayment(self, request, pk=None):
-        """Подключить автооплату."""
-        pass
+    def change_tariff(self, request, pk=None):
+        return self.manage_subscription(
+            request, action_type="change_tariff", pk=pk
+        )
+
+    @action(detail=True, methods=["patch"])
+    def manage_subscription(self, request, pk=None):
+        """Управление подпиской: сменить тариф или подключить автоплатеж."""
+        action_type = request.data.get("action_type")
+        try:
+            subscription = Subscription.objects.get(pk=pk)
+            if action_type == "change_tariff":
+                new_tariff_id = request.data.get('tariff_id')
+                new_tariff = TariffKind.objects.get(pk=new_tariff_id)
+                subscription.tariff = new_tariff
+                subscription.save()
+                return Response(
+                    {"message": "Тариф успешно изменен"},
+                    status=status.HTTP_200_OK,
+                )
+            else:
+                return Response(
+                    {"message": "Неверный тип действия"},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+        except Subscription.DoesNotExist:
+            return Response(
+                {"message": "Подписка не найдена"},
+                status=status.HTTP_404_NOT_FOUND
+            )
 
 
 class RatingViewSet(viewsets.ModelViewSet):

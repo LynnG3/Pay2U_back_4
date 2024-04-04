@@ -1,12 +1,24 @@
 import datetime
 
-from django.contrib.auth import get_user_model
+# from django.contrib.auth import get_user_model
+# from django.core.validators import MinValueValidator
+from django.apps import apps
 from django.db import models
 from django.db.models import UniqueConstraint
 from django.db.models.signals import post_save
-from django.dispatch import receiver
 
-User = get_user_model()
+# from django.forms import MultiValueField, CharField, MultiWidget, TextInput
+from django.dispatch import receiver
+from users.models import CustomUser
+
+# from random import choices
+# from typing import Optional
+
+
+# from django.core.validators import MaxValueValidator, MinValueValidator
+
+
+# TariffKind = apps.get_model('services', 'TariffKind')
 
 
 class Category(models.Model):
@@ -58,14 +70,16 @@ class Service(models.Model):
     )
     cashback_percentage = models.PositiveIntegerField(
         "Кэшбэк (в процентах)",
-        blank=True,
-        null=True,
     )
     new = models.BooleanField(default=True)
     popular = models.BooleanField(default=False)
+    # popular  - в сериализаторе или вью сделать счетчик подписчиков
+    # функция если больше ??? меняется на True
     pub_date = models.DateTimeField(
         verbose_name="Дата добавления", auto_now_add=True, db_index=True
     )
+
+    # objects = ServiceQuerySet.as_manager()
 
     class Meta:
         ordering = ("-pub_date",)
@@ -105,31 +119,27 @@ class Subscription(models.Model):
         (3, "ожидает активации"),
     )
     user = models.ForeignKey(
-        User, related_name="subscriptions", on_delete=models.CASCADE
+        CustomUser, related_name="subscriptions", on_delete=models.CASCADE
     )
     service = models.ForeignKey(
         Service, related_name="subscriptions", on_delete=models.CASCADE
     )
-    payment_status = models.BooleanField(default=False)
-    # но если это подписка - значит она уже оплачена? поле не нужно?
+    # payment_status = models.BooleanField(default=False)
+    # # но если это подписка оплачена, поле payment_status не нужно?
+    # если успеем хорошо бы менять автоматически activation_status после оплаты
+    # етогда по умолчанию ????
+    autopayment = models.BooleanField(default=False, verbose_name="автоплатеж")
+
     activation_status = models.PositiveSmallIntegerField(
         "Статус активации подписки",
         choices=ACTIVATION_CHOICES,
     )
-    # ожидает активации/активна/недействительна
-    # или 3 булевых поля отдельно?
-    # дата сообщения еще за 3 дня до экспайрд
-    # если вэйтинг то ничего не делаем а если неактивна деактивейт
-    # то подписка не выдается
-    # метол прикрутить если акт статус меняется на актив
-    # то прописывается дата полписки и дата истечения.
-    # Експайр дату потом привяжем к пуш увед
-    # subscribed_date = models.DateField(auto_now_add=True)
     promo_code = models.CharField(max_length=12, blank=True, null=True)
+    expiry_date = models.DateField(blank=True, null=True)
+    # пробный период
+    trial = models.BooleanField(default=False)
 
     class Meta:
-        verbose_name = "Подписка"
-        verbose_name_plural = "Подписки"
         constraints = [
             UniqueConstraint(fields=["user", "service"],
                              name="unique_subscription")
@@ -151,8 +161,8 @@ def update_user_subscriptions_count(sender, instance, **kwargs):
 class Rating(models.Model):
     """Модель рейтинга сервиса."""
 
-    user = models.ForeignKey(User, on_delete=models.CASCADE)
-    service = models.ForeignKey(Service, on_delete=models.CASCADE, related_name="service_ratings",)
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    service = models.ForeignKey(Service, on_delete=models.CASCADE)
     stars = models.IntegerField(
         choices=[
             (1, "1 star"),
