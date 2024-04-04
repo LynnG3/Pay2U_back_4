@@ -34,14 +34,16 @@ class ServiceAdmin(admin.ModelAdmin):
 
     inlines = (RatingInline,)
     list_display = (
-        "category",
         "name",
         "cost",
         "cashback_percentage",
     )
     fields = (
-        ("name",),
-        ("text"),
+        (
+            "name",
+            "partners_link",
+        ),
+        ("text",),
         (
             "category",
             "cost",
@@ -50,6 +52,7 @@ class ServiceAdmin(admin.ModelAdmin):
         (
             "image",
             "popular",
+            "new",
         ),
     )
     search_fields = (
