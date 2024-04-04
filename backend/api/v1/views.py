@@ -1,8 +1,8 @@
 import datetime
 
 from django.contrib.auth import get_user_model
-from djoser.views import UserViewSet
 from django.shortcuts import redirect
+from djoser.views import UserViewSet
 from payments.models import Payment, TariffKind
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -10,25 +10,19 @@ from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from services.models import (
-    Category,
-    Rating,
-    Service,
-    Subscription,
-)
+from services.models import Category, Rating, Service, Subscription
 
 from .permissions import IsOwner
-from .serializers import (
+from .serializers import (  # CreateCustomUserSerializer,
     CategorySerializer,
-    # CreateCustomUserSerializer,
     CustomUserSerializer,
     PaymentSerializer,
     PromocodeSerializer,
     RatingSerializer,
+    SellHistorySerializer,
     ServiceMainPageSerializer,
     SubscribedServiceSerializer,
     SubscriptionSerializer,
-    SellHistorySerializer
 )
 
 User = get_user_model()
@@ -54,6 +48,7 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = ServiceMainPageSerializer
     queryset = Service.objects.all()
+    permission_classes = (IsOwner,)
 
     def get_queryset(self):
         return Service.objects.filter(pub_date__lte=datetime.datetime.now())
@@ -168,6 +163,27 @@ class SubscriptionViewSet(viewsets.ViewSet):
     serializer_class = SubscriptionSerializer
     permission_classes = [IsOwner]
 
+    def activate_autopayment(self, request, pk=None):
+        try:
+            subscription = Subscription.objects.get(pk=pk)
+            if subscription.autopayment:
+                return Response(
+                    {"message": "Автоплатеж уже активирован"},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            else:
+                subscription.autopayment = True
+                subscription.save()
+                return Response(
+                    {"message": "Автоплатеж успешно активирован"},
+                    status=status.HTTP_200_OK,
+                )
+        except Subscription.DoesNotExist:
+            return Response(
+                {"message": "Подписка не найдена"},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+
     @action(detail=True, methods=["delete"])
     def unsubscribe(self, request, pk=None):
         """Отменить подписку."""
@@ -187,25 +203,29 @@ class SubscriptionViewSet(viewsets.ViewSet):
             )
 
     @action(detail=True, methods=["patch"])
+    def autopayment(self, request, pk=None):
+        self.activate_autopayment(request, pk)
+
+    @action(detail=True, methods=["patch"])
+    def change_tariff(self, request, pk=None):
+        return self.manage_subscription(
+            request, action_type="change_tariff", pk=pk
+        )
+
+    @action(detail=True, methods=["patch"])
     def manage_subscription(self, request, pk=None):
         """Управление подпиской: сменить тариф или подключить автоплатеж."""
         action_type = request.data.get("action_type")
         try:
-            subscription = Service.objects.get(pk=pk)
-            if action_type == "change_tarif":
+            subscription = Subscription.objects.get(pk=pk)
+            if action_type == "change_tariff":
                 new_tariff_id = request.data.get('tariff_id')
                 new_tariff = TariffKind.objects.get(pk=new_tariff_id)
                 subscription.tariff = new_tariff
                 subscription.save()
                 return Response(
                     {"message": "Тариф успешно изменен"},
-                    status=status.HTTP_200_OK
-                )
-            elif action_type == "autopayment":
-                # логика автооплаты или симуляция - нажал кнопку подключилась
-                return Response(
-                    {"message": "Автооплата успешно подключена"},
-                    status=status.HTTP_200_OK
+                    status=status.HTTP_200_OK,
                 )
             else:
                 return Response(

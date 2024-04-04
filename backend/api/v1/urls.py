@@ -41,9 +41,7 @@ urlpatterns = [
     # path("categories/", CategoryViewSet.as_view(
     #     {"get": "list"}
     # ), name="categories"),
-    path("catalog/", ServiceViewSet.as_view(
-        {"get": "list"}
-    ), name="catalog"),
+    path("catalog/", ServiceViewSet.as_view({"get": "list"}), name="catalog"),
     # path(
     #     "catalog_new/",
     #     ServiceViewSet.as_view({"get": "get_queryset"}),
@@ -68,17 +66,17 @@ urlpatterns = [
     path(
         "subscription_paid/",
         SubscriptionPaidView.as_view(),
-        name="subscription_paid"
+        name="subscription_paid",
     ),
     path(
-        'subscriptions/<int:pk>/change_tarif/',
-        SubscriptionViewSet.as_view({'patch': 'change_tarif'}),
-        name='change_tarif'
+        'subscriptions/<int:pk>/change_tariff/',
+        SubscriptionViewSet.as_view({'patch': 'change_tariff'}),
+        name='change_tariff',
     ),
     path(
         'subscriptions/<int:pk>/autopayment/',
         SubscriptionViewSet.as_view({'patch': 'autopayment'}),
-        name='autopayment'
+        name='autopayment',
     ),
     path("", include("djoser.urls.authtoken")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

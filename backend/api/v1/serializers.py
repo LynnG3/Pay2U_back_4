@@ -8,12 +8,12 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
+from payments.models import Cashback, Payment, TariffKind
 from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
-from services.models import Category, Rating, Service, Subscription
-from payments.models import Payment, Cashback, TariffKind
-
 from rest_framework.serializers import SerializerMethodField  # ValidationError
+from services.models import Category, Rating, Service, Subscription
+
 # from rest_framework.validators import UniqueTogetherValidator
 # from django.db.models import UniqueConstraint
 User = get_user_model()
@@ -156,6 +156,7 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
 
     # image = serializers.SerializerMethodField()
     activation_status = serializers.SerializerMethodField()
+    # payment_status = serializers.SerializerMethodField()
     nearest_payment_date = serializers.SerializerMethodField()
     next_payment_amount = serializers.SerializerMethodField()
 
@@ -164,6 +165,13 @@ class SubscribedServiceSerializer(serializers.ModelSerializer):
 
         user = self.context.get("request").user
         return Subscription.objects.filter(service=obj, user=user).exists()
+
+    # def get_payment_status(self, obj):
+    #    """Полуается статус - подписан ли пользовател на сервис или нет."""
+    #
+    #    user = self.context.get("request").user
+    #    if Payment.objects.filter(service=obj, user=user).exists():
+    #        payment_status = True
 
     # def get_image(self, obj):
     #     """Получение картинок для банннера подписок юзера."""
@@ -271,18 +279,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         user = self.context['request'].user
         service = validated_data['service']
         trial = validated_data.get('trial', False)
-        previous_payments = Payment.objects.filter(
-            user=user, service=service
+        subscription, created = Subscription.objects.get_or_create(
+            user=user, service=service, defaults=validated_data
         )
-        previous_suscriptions = Subscription.objects.filter(
-            user=user, service=service
-        )
-        # Проверка, существует ли подписка на пробный период 
+        # Проверка, существует ли подписка на пробный период
         # и пользователь подписывается на этот сервис впервые
-        if trial and (
-            previous_suscriptions.count()
-            and previous_payments.count()
-        ) == 0:
+        if trial and created:
             # Установка флага пробного периода
             validated_data['trial'] = True
             # Установка срока окончания пробного периода
@@ -295,7 +297,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 status=status.HTTP_201_CREATED
             )
         else:
-            return super().create(validated_data)
+            return subscription
 
 
 class PaymentSerializer(serializers.ModelSerializer):

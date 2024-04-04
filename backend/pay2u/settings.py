@@ -73,7 +73,7 @@ TEMPLATES = [
 WSGI_APPLICATION = "pay2u.wsgi.application"
 
 
-if os.getenv("DEBUG", "True") == "True":
+if os.getenv("DEBUG", "True") == "True" or "true":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -87,24 +87,6 @@ else:
             "NAME": os.getenv("POSTGRES_DB", "pay2u_db"),
             "USER": os.getenv("POSTGRES_USER", "pay2u_admin"),
             "PASSWORD": os.getenv("POSTFRES_PASSWORD", "secret_password"),
-            "HOST": os.getenv("DB_HOST", ""),
-            "PORT": os.getenv("DB_PORT", 5432),
-        }
-    }
-if os.getenv("DEBUG") == "True":
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.sqlite3",
-            "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
-        }
-    }
-else:
-    DATABASES = {
-        "default": {
-            "ENGINE": "django.db.backends.postgresql",
-            "NAME": os.getenv("POSTGRES_DB", "pay2u_db"),
-            "USER": os.getenv("POSTGRES_USER", "pay2u_admin"),
-            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "secret_password"),
             "HOST": os.getenv("DB_HOST", ""),
             "PORT": os.getenv("DB_PORT", 5432),
         }

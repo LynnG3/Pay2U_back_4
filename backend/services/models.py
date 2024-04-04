@@ -1,7 +1,4 @@
 import datetime
-# from random import choices
-# from typing import Optional
-
 
 # from django.contrib.auth import get_user_model
 # from django.core.validators import MinValueValidator
@@ -12,8 +9,11 @@ from django.db.models.signals import post_save
 
 # from django.forms import MultiValueField, CharField, MultiWidget, TextInput
 from django.dispatch import receiver
-
 from users.models import CustomUser
+
+# from random import choices
+# from typing import Optional
+
 
 # from django.core.validators import MaxValueValidator, MinValueValidator
 
@@ -127,7 +127,8 @@ class Subscription(models.Model):
     # payment_status = models.BooleanField(default=False)
     # # но если это подписка оплачена, поле payment_status не нужно?
     # если успеем хорошо бы менять автоматически activation_status после оплаты
-    # етогда по умолчанию ???? 
+    # етогда по умолчанию ????
+    autopayment = models.BooleanField(default=False, verbose_name="автоплатеж")
 
     activation_status = models.PositiveSmallIntegerField(
         "Статус активации подписки",
