@@ -55,7 +55,7 @@ class ServiceAdmin(admin.ModelAdmin):
     search_fields = (
         "name",
         "category",
-        "cashback_percantage",
+        "cashback_percentage",
     )
     list_filter = (
         "name",
