@@ -11,7 +11,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = os.getenv("SECRET_KEY", get_random_secret_key())
 
-DEBUG = True  # os.getenv("DEBUG", "").lower() == "true"
+DEBUG = os.getenv("DEBUG", "").lower() == "true"
 
 ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost, 127.0.0.1").split(", ")
 
@@ -72,7 +72,8 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "pay2u.wsgi.application"
 
-if os.getenv("DEBUG") == "True" or "true":
+
+if os.getenv("DEBUG", "True") == "True":
     DATABASES = {
         "default": {
             "ENGINE": "django.db.backends.sqlite3",
@@ -80,12 +81,30 @@ if os.getenv("DEBUG") == "True" or "true":
         }
     }
 else:
-    DATABASE = {
-        "dafault": {
+    DATABASES = {
+        "default": {
             "ENGINE": "django.db.backends.postgresql",
             "NAME": os.getenv("POSTGRES_DB", "pay2u_db"),
             "USER": os.getenv("POSTGRES_USER", "pay2u_admin"),
             "PASSWORD": os.getenv("POSTFRES_PASSWORD", "secret_password"),
+            "HOST": os.getenv("DB_HOST", ""),
+            "PORT": os.getenv("DB_PORT", 5432),
+        }
+    }
+if os.getenv("DEBUG") == "True":
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.sqlite3",
+            "NAME": os.path.join(BASE_DIR, "db.sqlite3"),
+        }
+    }
+else:
+    DATABASES = {
+        "default": {
+            "ENGINE": "django.db.backends.postgresql",
+            "NAME": os.getenv("POSTGRES_DB", "pay2u_db"),
+            "USER": os.getenv("POSTGRES_USER", "pay2u_admin"),
+            "PASSWORD": os.getenv("POSTGRES_PASSWORD", "secret_password"),
             "HOST": os.getenv("DB_HOST", ""),
             "PORT": os.getenv("DB_PORT", 5432),
         }

@@ -10,7 +10,6 @@ from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
-
 from services.models import Category, Rating, Service, Subscription
 from payments.models import Payment, Cashback, TariffKind
 
