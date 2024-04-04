@@ -24,7 +24,7 @@ router_v1.register(
 # сториз онбординг:
 # router_v1.register(r'history', HistoryViewSet)
 # история платежей юзера:
-router_v1.register(r'sell_history', SellHistoryViewSet)
+router_v1.register(r"sell_history", SellHistoryViewSet)
 
 urlpatterns = [
     # url(r'^auth/', include('djoser.urls')),
@@ -66,6 +66,16 @@ urlpatterns = [
         "subscription_paid/",
         SubscriptionPaidView.as_view(),
         name="subscription_paid"
+    ),
+    path(
+        'subscriptions/<int:pk>/change_tarif/',
+        SubscriptionViewSet.as_view({'patch': 'change_tarif'}),
+        name='change_tarif'
+    ),
+    path(
+        'subscriptions/<int:pk>/autopayment/',
+        SubscriptionViewSet.as_view({'patch': 'autopayment'}),
+        name='autopayment'
     ),
     path("", include("djoser.urls.authtoken")),
     path("schema/", SpectacularAPIView.as_view(), name="schema"),

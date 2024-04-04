@@ -4,13 +4,15 @@ from services.models import Subscription
 
 User = get_user_model()
 LIMIT_POSTS_PER_PAGE = 15
+
+
 class SubscriptionInline(admin.TabularInline):
     'Таблица с подписками пользователей. '
 
     model = Subscription
     fields = [
         'service',
-        'payment_status',
+        'tariff',
         'activation_status',
     ]
 

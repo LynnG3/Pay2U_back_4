@@ -1,6 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
-from services.models import Service
+from services.models import Service, Subscription
 
 User = get_user_model()
 
@@ -9,7 +9,7 @@ CALLBACK_CHOICES = (
     ("denied", "Отклонен"),
 )
 
-DISCOUNT = 0.75
+DISCOUNT = 0.8
 
 DURATION_CHOICES = (
     (1, '1 месяц'),
@@ -60,23 +60,6 @@ class TariffKind(models.Model):
         verbose_name="Описание тарифа",
         editable=True,
     )
-    cashback = models.PositiveIntegerField(
-        default=5,
-        verbose_name="Кэшбэк (в процентах)",
-        editable=True,
-    )
-    comment_1 = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name="Частота оплаты",
-        editable=True,
-    )
-    comment_2 = models.TextField(
-        null=True,
-        blank=True,
-        verbose_name="Стоимость далее",
-        editable=True,
-    )
 
     class Meta:
         ordering = ("-cost_per_month",)
@@ -85,7 +68,11 @@ class TariffKind(models.Model):
 
     def calculate_cost_per_month(self, duration):
         """Вычисляет цену за месяц в завис. от длительности подписки."""
-        return int(self.cost_per_month * DISCOUNT ** (duration - 1))
+        if duration == 1:
+            return self.cost_per_month
+        elif duration == 12:
+            return int(self.cost_per_month * DISCOUNT ** (duration / 4))
+        return int(self.cost_per_month * DISCOUNT ** (duration / 3))
 
     def save(self, *args, **kwargs):
         """Сохраняет итоговые значения в завсисмости
@@ -93,14 +80,10 @@ class TariffKind(models.Model):
         """
         self.cost_per_month = self.calculate_cost_per_month(self.duration)
         self.cost_total = self.cost_per_month * self.duration
-        self.comment_1 = (
-            f'Далее {self.cost_total} при оплате раз в {self.duration} мес.'
-        )
-        self.comment_2 = f'Далее {self.cost_total}'
         super(TariffKind, self).save(*args, **kwargs)
 
     def __str__(self):
-        return str(self.duration)
+        return self.duration
 
 
 class Payment(models.Model):
@@ -119,6 +102,12 @@ class Payment(models.Model):
         on_delete=models.CASCADE,
         verbose_name="Сервис",
         related_name="payment_services",
+    )
+    subscription = models.ForeignKey(
+        Subscription,
+        on_delete=models.CASCADE,
+        verbose_name="Подписка",
+        related_name="payment_subscriptions",
     )
     tariff_kind = models.ForeignKey(
         TariffKind,
@@ -153,7 +142,7 @@ class Payment(models.Model):
         verbose_name_plural = "Платежи"
 
     def save(self, *args, **kwargs):
-        self.total = self.tariff_kind.comment_2
+        self.total = self.tariff_kind.cost_total
         super(Payment, self).save(*args, **kwargs)
 
     def __str__(self):
