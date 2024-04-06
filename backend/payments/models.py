@@ -27,10 +27,13 @@ class TariffKind(models.Model):
     # тип поля service здесь многие ко многим -
     # тк например 2 сервиса (кинопоиск + амедиатека) -
     # 4 варианта по длительности
-    service = models.ManyToManyField(
+    service = models.ForeignKey(
         Service,
         verbose_name="Сервис",
         related_name="tariffs_services",
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
     )
     name = models.CharField(
         max_length=50,
