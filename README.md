@@ -150,7 +150,13 @@ PASSPHRASE                     # кодовая фраза (пароль) для
 
 
 #### Авторы
-Polina Grunina
+
+backend:
+- Polina Grunina
 Telegram: @GrethenMorgan
-Denis Shtanskiy
+- Denis Shtanskiy
 Telegram: @shtanskiy
+
+frontend:
+- Olga Pankrashina
+Telegram: @olyaolya2713
