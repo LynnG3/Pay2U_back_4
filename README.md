@@ -19,9 +19,11 @@ pay2u.myddns.me/api/v1/schema/docs/
 ## Использованные при реализации проекта технологии
  - Docker
  - Django
- - djangorestframework
- - Python
+ - DjangoRestFramework
+ - Djoser
+ - DRF Spectacular
  - Nginx
+ - Python
  - PostgreSQL
 
 ## __Как развернуть проект__
