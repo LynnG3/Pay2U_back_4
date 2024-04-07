@@ -152,11 +152,11 @@ PASSPHRASE                     # кодовая фраза (пароль) для
 #### Авторы
 
 backend:
-- Polina Grunina
+- Polina Grunina /
 Telegram: @GrethenMorgan
-- Denis Shtanskiy
+- Denis Shtanskiy /
 Telegram: @shtanskiy
 
 frontend:
-- Olga Pankrashina
+- Olga Pankrashina /
 Telegram: @olyaolya2713
