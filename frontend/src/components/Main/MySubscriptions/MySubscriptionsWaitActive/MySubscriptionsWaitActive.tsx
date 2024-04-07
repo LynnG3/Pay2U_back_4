@@ -12,7 +12,7 @@ import {
 const font = { fontFamily: 'Inter', fontSize: '14px', fontWeight: '400', lineHeight: '1.25' };
 
 const styles = {
-  container: { margin: ' 0 20px ' },
+  container: { margin: ' 0 17px 0 20px' },
   text: { display: 'flex' },
   subtitle: {
     ...font,
@@ -32,7 +32,7 @@ export default function MySubscriptionsWaitActive() {
           <InfoTooltip tooltip={InfoTooltipData.titleSubscription} icon={InfoIcon} />
         </Box>
         <Typography component="p" sx={styles.subtitle}>
-          {MySubscriptionsWaitActiveData.subtitle} {MySubscriptionsWaitActiveData.period}г.
+          {MySubscriptionsWaitActiveData.subtitle} {MySubscriptionsWaitActiveData.period} г.
         </Typography>
       </Box>
       {MySubscriptionsWaitActiveCardData.card.map((card, index) => (
