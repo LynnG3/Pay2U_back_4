@@ -1,5 +1,6 @@
 from django.contrib import admin
 from django.contrib.auth import get_user_model
+
 from services.models import Subscription
 
 User = get_user_model()
@@ -55,45 +56,55 @@ class UserAdmin(admin.ModelAdmin):
 
     fieldsets = (
         (None, {'fields': ('username', 'password')}),
-        ('Персональные данные', {'fields': (
-            'first_name',
-            'last_name',
-            'email',
-            'phone_number',
-            'surname'
-        )}),
-        ('Права доступа', {'fields': (
-            'is_active',
-            'is_staff',
-            'is_superuser',
-            'groups',
-            'user_permissions'
-        )}),
-        ('Даты', {'fields': (
-            'last_login',
-            'date_joined'
-        )}),
+        (
+            'Персональные данные',
+            {
+                'fields': (
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'phone_number',
+                    'surname',
+                )
+            },
+        ),
+        (
+            'Права доступа',
+            {
+                'fields': (
+                    'is_active',
+                    'is_staff',
+                    'is_superuser',
+                    'groups',
+                    'user_permissions',
+                )
+            },
+        ),
+        ('Даты', {'fields': ('last_login', 'date_joined')}),
     )
 
     add_fieldsets = (
-        (None, {
-            'classes': ('wide',),
-            'fields': (
-                'username',
-                'password1',
-                'password2',
-                'first_name',
-                'last_name',
-                'email',
-                'phone_number',
-                'surname',
-                'is_active',
-                'is_staff',
-                'is_superuser',
-                'groups',
-                'user_permissions'
-            )
-        }),
+        (
+            None,
+            {
+                'classes': ('wide',),
+                'fields': (
+                    'username',
+                    'password1',
+                    'password2',
+                    'first_name',
+                    'last_name',
+                    'email',
+                    'phone_number',
+                    'surname',
+                    'is_active',
+                    'is_staff',
+                    'is_superuser',
+                    'groups',
+                    'user_permissions',
+                ),
+            },
+        ),
     )
 
     def subscriptions_count(self, obj):

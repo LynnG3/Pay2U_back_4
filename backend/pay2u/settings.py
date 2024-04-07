@@ -1,8 +1,10 @@
 import os
 from pathlib import Path
 
+import sentry_sdk
 from django.core.management.utils import get_random_secret_key
 from dotenv import load_dotenv
+from sentry_sdk.integrations.django import DjangoIntegration
 
 load_dotenv()
 
@@ -153,7 +155,7 @@ DJOSER = {
     },
 }
 
-# Для дополнительной фиксации, что подписка активирована и тд
+# Для дополнительной фиксации, что подписка активирована и отправки пуш уведомлений
 EMAIL_HOST = os.getenv("EMAIL_HOST", default="localhost")
 EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", default="")
 EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", default="")
@@ -177,3 +179,12 @@ CORS_ALLOWED_ORIGINS = [
     "https://158.160.20.211",
     "https://pay2u.myddns.me",
 ]
+
+sentry_sdk.init(
+    dsn="https://5e0ea6ace6a9826158e07c5df0a05dcc@o4506547207077888.ingest.us.sentry.io/4507044762681344",
+    integrations=[
+        DjangoIntegration(),
+    ],
+    traces_sample_rate=1.0,
+    send_default_pii=True,
+)

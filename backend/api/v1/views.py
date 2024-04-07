@@ -3,31 +3,22 @@ import datetime
 from django.contrib.auth import get_user_model
 from django.shortcuts import redirect
 from djoser.views import UserViewSet
-from payments.models import Payment, TariffKind
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly,
-)
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework.views import APIView
-from services.models import Category, Rating, Service, Subscription
 
+from payments.models import Payment, TariffKind
+from services.models import Category, Rating, Service, Subscription
 from .permissions import IsOwner
-from .serializers import (
-    CategorySerializer,
-    CustomUserSerializer,
-    PaymentSerializer,
-    PromocodeSerializer,
-    RatingSerializer,
-    SellHistorySerializer,
-    ServiceMainPageSerializer,
-    ServiceSerializer,
-    ServiceShortSerializer,
-    SubscriptionSerializer,
-)
+from .serializers import (CategoriesSerializer, CategorySerializer,
+                          CustomUserSerializer, PaymentSerializer,
+                          PromocodeSerializer, RatingSerializer,
+                          SellHistorySerializer, ServiceMainPageSerializer,
+                          ServiceSerializer, SubscriptionSerializer)
 
 User = get_user_model()
 
@@ -69,10 +60,12 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
 
-    def list(self, request):
-        queryset = self.get_queryset()
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+
+class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
+    """Представление отдельных категорий со всеми сервисами."""
+
+    serializer_class = CategoriesSerializer
+    queryset = Service.objects.select_related("category").all()
 
 
 class SubscribeView(GenericAPIView):
@@ -86,18 +79,6 @@ class SubscribeView(GenericAPIView):
         user = request.user
         try:
             service = Service.objects.get(id=service_id)
-            #     # Проверка на наличие активной подписки ДЛЯ ПРОБНОГО ПЕРИОДА
-            #     existing_subscription = Subscription.objects.filter(user=user, service=service)
-            #     if existing_subscription.exists():
-            #         return Response(
-            #             {"message": "Вы уже подписаны"},
-            #             status=status.HTTP_400_BAD_REQUEST
-            #         )
-            #     subscription = Subscription.objects.create(user=user, service=service, trial=True)
-            #     if subscription:
-            #         return Response(status=status.HTTP_200_OK)
-            # except Service.DoesNotExist:
-            #     return Response(status=status.HTTP_404_NOT_FOUND)
             Subscription.objects.create(user=user, service=service)
             return Response(status=status.HTTP_200_OK)
         except Service.DoesNotExist:
@@ -111,15 +92,9 @@ class SubscriptionPaymentView(GenericAPIView):
     queryset = Payment.objects.all()
 
     def post(self, request):
-        # логика оплаты - имитация
         callback = True
-        # предполагаем, что оплата прошла успешно
         if callback:
             return redirect("subscription_paid")
-            # return Response(
-            #     {"message": "Успешная оплата"},
-            #     status=status.HTTP_200_OK,
-            # )
         else:
             return Response(
                 {"message": "Проблема на стороне банка"},
@@ -154,7 +129,7 @@ class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payment.objects.all()
 
     def get_queryset(self):
-        user = self.request.user  # Получаем текущего пользователя
+        user = self.request.user
         return Payment.objects.filter(user=user)
 
 
@@ -204,15 +179,9 @@ class SubscriptionViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["patch, post"])
     def autopayment(self, request, pk=None):
         self.activate_autopayment(request, pk)
-
-    @action(detail=True, methods=["patch"])
-    def change_tariff(self, request, pk=None):
-        return self.manage_subscription(
-            request, action_type="change_tariff", pk=pk
-        )
 
     @action(detail=True, methods=["patch"])
     def manage_subscription(self, request, pk=None):
@@ -239,6 +208,12 @@ class SubscriptionViewSet(viewsets.ViewSet):
                 {"message": "Подписка не найдена"},
                 status=status.HTTP_404_NOT_FOUND,
             )
+
+    @action(detail=True, methods=["patch"])
+    def change_tariff(self, request, pk=None):
+        return self.manage_subscription(
+            request, action_type="change_tariff", pk=pk
+        )
 
 
 class RatingViewSet(viewsets.ModelViewSet):

@@ -1,7 +1,7 @@
 from django.contrib import admin
 
+from payments.models import Payment, TariffKind
 from .models import Category, Rating, Service, Subscription
-from payments.models import TariffKind, Payment
 
 admin.site.empty_value_display = 'Не задано'
 admin.site.site_header = 'Администрирование проекта "Pay2u"'
@@ -93,5 +93,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
         "activation_status",
         "service",
     )
-    search_fields = ("user", "service", "activation_statis")
+    search_fields = (
+        "user",
+        "service",
+        "activation_statis",
+    )
     list_editable = ("activation_status",)
