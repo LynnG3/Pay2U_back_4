@@ -8,10 +8,11 @@ from django.contrib.auth import get_user_model
 from django.db.models import Max
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
-from payments.models import Cashback, Payment
 from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import SerializerMethodField
+
+from payments.models import Cashback, Payment
 from services.models import Category, Rating, Service, Subscription
 
 User = get_user_model()
@@ -106,7 +107,6 @@ class ShortHistorySerializer(serializers.ModelSerializer):
         return accumulated
 
     def get_total_spent(self, obj):
-        # по месяцам разбить и историю и верхнюю плашку потрачено за март
         """Получение суммы потраченных средств для главной страницы."""
 
         user = self.context.get("request").user
@@ -259,15 +259,7 @@ class ServiceSerializer(serializers.ModelSerializer):
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
-    """Cериализатор подписки ."""
-
-    # activation_status же уже есть в модели - нужно ли дублировать?
-    # ACTIVATION_CHOICES = (
-    #     (1, "Активирована"),
-    #     (2, "недействительна"),
-    #     (3, "ожидает активации"),
-    # )
-    # activation_status = serializers.ChoiceField(choices=ACTIVATION_CHOICES)
+    """Cериализатор подписки."""
 
     service = serializers.PrimaryKeyRelatedField(
         queryset=Service.objects.all()
@@ -290,12 +282,8 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         subscription, created = Subscription.objects.get_or_create(
             user=user, service=service, defaults=validated_data
         )
-        # Проверка, существует ли подписка на пробный период
-        # и пользователь подписывается на этот сервис впервые
         if trial and created:
-            # Установка флага пробного периода
             validated_data['trial'] = True
-            # Установка срока окончания пробного периода
             validated_data['expiry_date'] = (
                 datetime.date.today() + datetime.timedelta(days=30)
             )
@@ -318,9 +306,7 @@ class PaymentSerializer(serializers.ModelSerializer):
         fields = "__all__"
 
     def get_is_trial(self, obj):
-        # Получает связанную подписку из объекта платежа
         subscription = obj.subscription
-        # Проверяем, является ли подписка пробным периодом
         return subscription.trial
 
     def create(self, validated_data):

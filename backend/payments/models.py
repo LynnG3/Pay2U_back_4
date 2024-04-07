@@ -1,5 +1,6 @@
 from django.contrib.auth import get_user_model
 from django.db import models
+
 from services.models import Service, Subscription
 
 User = get_user_model()
@@ -15,7 +16,7 @@ DURATION_CHOICES = (
     (1, '1 месяц'),
     (3, '3 месяца'),
     (6, '6 месяцев'),
-    (12, '12 месяцев')
+    (12, '12 месяцев'),
 )
 
 CASHBACK_CHOICES = ()
@@ -24,9 +25,6 @@ CASHBACK_CHOICES = ()
 class TariffKind(models.Model):
     """Модель разновидности тарифа по длительности."""
 
-    # тип поля service здесь многие ко многим -
-    # тк например 2 сервиса (кинопоиск + амедиатека) -
-    # 4 варианта по длительности
     service = models.ForeignKey(
         Service,
         verbose_name="Сервис",
@@ -71,6 +69,7 @@ class TariffKind(models.Model):
 
     def calculate_cost_per_month(self, duration):
         """Вычисляет цену за месяц в завис. от длительности подписки."""
+
         if duration == 1:
             return self.cost_per_month
         elif duration == 12:
@@ -81,6 +80,7 @@ class TariffKind(models.Model):
         """Сохраняет итоговые значения в завсисмости
         от вычисленной цены за месяц. Выводит комментарии об условиях тарифа.
         """
+
         self.cost_per_month = self.calculate_cost_per_month(self.duration)
         self.cost_total = self.cost_per_month * self.duration
         super(TariffKind, self).save(*args, **kwargs)

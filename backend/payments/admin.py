@@ -1,5 +1,4 @@
 from django.contrib import admin
-from services.models import Service
 
 from .models import Cashback, Payment, TariffKind
 
