@@ -1,5 +1,6 @@
 from django.contrib import admin
 
+from payments.models import Payment, TariffKind
 from .models import Category, Rating, Service, Subscription
 
 admin.site.empty_value_display = 'Не задано'
@@ -12,6 +13,16 @@ LIMIT_POSTS_PER_PAGE = 15
 
 class RatingInline(admin.TabularInline):
     model = Rating
+    extra = 2
+
+
+class TariffInline(admin.TabularInline):
+    model = TariffKind
+    extra = 2
+
+
+class PaymentInline(admin.TabularInline):
+    model = Payment
     extra = 2
 
 
@@ -32,7 +43,11 @@ class CategoryAdmin(admin.ModelAdmin):
 class ServiceAdmin(admin.ModelAdmin):
     """Администрирование сервисов."""
 
-    inlines = (RatingInline,)
+    inlines = (
+        RatingInline,
+        TariffInline,
+        PaymentInline,
+    )
     list_display = (
         "name",
         "cost",
@@ -78,5 +93,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
         "activation_status",
         "service",
     )
-    search_fields = ("user", "service", "activation_statis")
+    search_fields = (
+        "user",
+        "service",
+        "activation_statis",
+    )
     list_editable = ("activation_status",)
