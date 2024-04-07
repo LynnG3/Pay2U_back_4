@@ -1,6 +1,7 @@
 from django.contrib import admin
 
 from .models import Category, Rating, Service, Subscription
+from payments.models import TariffKind, Payment
 
 admin.site.empty_value_display = 'Не задано'
 admin.site.site_header = 'Администрирование проекта "Pay2u"'
@@ -12,6 +13,16 @@ LIMIT_POSTS_PER_PAGE = 15
 
 class RatingInline(admin.TabularInline):
     model = Rating
+    extra = 2
+
+
+class TariffKindInline(admin.TabularInline):
+    model = TariffKind
+    extra = 2
+
+
+class PaymentInline(admin.TabularInline):
+    model = Payment
     extra = 2
 
 
@@ -32,16 +43,22 @@ class CategoryAdmin(admin.ModelAdmin):
 class ServiceAdmin(admin.ModelAdmin):
     """Администрирование сервисов."""
 
-    inlines = (RatingInline,)
+    inlines = (
+        RatingInline,
+        TariffKindInline,
+        PaymentInline
+    )
     list_display = (
-        "category",
         "name",
         "cost",
         "cashback_percentage",
     )
     fields = (
-        ("name",),
-        ("text"),
+        (
+            "name",
+            "partners_link",
+        ),
+        ("text",),
         (
             "category",
             "cost",
@@ -50,12 +67,13 @@ class ServiceAdmin(admin.ModelAdmin):
         (
             "image",
             "popular",
+            "new",
         ),
     )
     search_fields = (
         "name",
         "category",
-        "cashback_percantage",
+        "cashback_percentage",
     )
     list_filter = (
         "name",

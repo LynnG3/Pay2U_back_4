@@ -1,5 +1,5 @@
 export const BASE_URL = 'https://pay2u.myddns.me';
-export const TOKEN = '96443468523569fb439e6db98ba607b9b59538bd';
+export const TOKEN = 'e41400fe139b235717faf06e471a322e11854654';
 
 const headers = {
   authorization: `Token ${TOKEN}`,

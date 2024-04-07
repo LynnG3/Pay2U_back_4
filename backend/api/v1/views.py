@@ -7,13 +7,16 @@ from payments.models import Payment, TariffKind
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from services.models import Category, Rating, Service, Subscription
 
 from .permissions import IsOwner
-from .serializers import (  # CreateCustomUserSerializer,
+from .serializers import (
     CategorySerializer,
     CustomUserSerializer,
     PaymentSerializer,
@@ -21,7 +24,8 @@ from .serializers import (  # CreateCustomUserSerializer,
     RatingSerializer,
     SellHistorySerializer,
     ServiceMainPageSerializer,
-    SubscribedServiceSerializer,
+    ServiceSerializer,
+    ServiceShortSerializer,
     SubscriptionSerializer,
 )
 
@@ -48,17 +52,15 @@ class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = ServiceMainPageSerializer
     queryset = Service.objects.all()
-    permission_classes = (IsOwner,)
+    permission_classes = (IsAuthenticatedOrReadOnly,)
+
+    def get_serializer_class(self):
+        if self.action == "retrieve":
+            return ServiceSerializer
+        return super().get_serializer_class()
 
     def get_queryset(self):
         return Service.objects.filter(pub_date__lte=datetime.datetime.now())
-
-    def list(self, request):
-        services = self.get_queryset()
-        serializer = SubscribedServiceSerializer(
-            services, many=True, context={"request": request}
-        )
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
 
 class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
@@ -84,18 +86,18 @@ class SubscribeView(GenericAPIView):
         user = request.user
         try:
             service = Service.objects.get(id=service_id)
-        #     # Проверка на наличие активной подписки ДЛЯ ПРОБНОГО ПЕРИОДА
-        #     existing_subscription = Subscription.objects.filter(user=user, service=service)
-        #     if existing_subscription.exists():
-        #         return Response(
-        #             {"message": "Вы уже подписаны"},
-        #             status=status.HTTP_400_BAD_REQUEST
-        #         )
-        #     subscription = Subscription.objects.create(user=user, service=service, trial=True)
-        #     if subscription:
-        #         return Response(status=status.HTTP_200_OK)
-        # except Service.DoesNotExist:
-        #     return Response(status=status.HTTP_404_NOT_FOUND)
+            #     # Проверка на наличие активной подписки ДЛЯ ПРОБНОГО ПЕРИОДА
+            #     existing_subscription = Subscription.objects.filter(user=user, service=service)
+            #     if existing_subscription.exists():
+            #         return Response(
+            #             {"message": "Вы уже подписаны"},
+            #             status=status.HTTP_400_BAD_REQUEST
+            #         )
+            #     subscription = Subscription.objects.create(user=user, service=service, trial=True)
+            #     if subscription:
+            #         return Response(status=status.HTTP_200_OK)
+            # except Service.DoesNotExist:
+            #     return Response(status=status.HTTP_404_NOT_FOUND)
             Subscription.objects.create(user=user, service=service)
             return Response(status=status.HTTP_200_OK)
         except Service.DoesNotExist:
@@ -230,12 +232,12 @@ class SubscriptionViewSet(viewsets.ViewSet):
             else:
                 return Response(
                     {"message": "Неверный тип действия"},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
         except Subscription.DoesNotExist:
             return Response(
                 {"message": "Подписка не найдена"},
-                status=status.HTTP_404_NOT_FOUND
+                status=status.HTTP_404_NOT_FOUND,
             )
 
 
