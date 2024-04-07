@@ -2,7 +2,6 @@ from django.contrib import admin
 
 from payments.models import Payment, TariffKind
 from .models import Category, Rating, Service, Subscription
-from payments.models import TariffKind, Payment
 
 admin.site.empty_value_display = 'Не задано'
 admin.site.site_header = 'Администрирование проекта "Pay2u"'
