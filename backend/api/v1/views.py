@@ -14,11 +14,11 @@ from rest_framework.views import APIView
 from payments.models import Payment, TariffKind
 from services.models import Category, Rating, Service, Subscription
 from .permissions import IsOwner
-from .serializers import (CategorySerializer, CustomUserSerializer,
-                          PaymentSerializer, PromocodeSerializer,
-                          RatingSerializer, SellHistorySerializer,
-                          ServiceMainPageSerializer, ServiceSerializer,
-                          SubscriptionSerializer)
+from .serializers import (CategoriesSerializer, CategorySerializer,
+                          CustomUserSerializer, PaymentSerializer,
+                          PromocodeSerializer, RatingSerializer,
+                          SellHistorySerializer, ServiceMainPageSerializer,
+                          ServiceSerializer, SubscriptionSerializer)
 
 User = get_user_model()
 
@@ -59,6 +59,13 @@ class CategoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = CategorySerializer
     queryset = Category.objects.all()
+
+
+class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
+    """Представление отдельных категорий со всеми сервисами."""
+
+    serializer_class = CategoriesSerializer
+    queryset = Service.objects.select_related("category").all()
 
 
 class SubscribeView(GenericAPIView):
@@ -172,7 +179,7 @@ class SubscriptionViewSet(viewsets.ViewSet):
                 status=status.HTTP_404_NOT_FOUND,
             )
 
-    @action(detail=True, methods=["patch"])
+    @action(detail=True, methods=["patch, post"])
     def autopayment(self, request, pk=None):
         self.activate_autopayment(request, pk)
 

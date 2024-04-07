@@ -65,7 +65,7 @@ class TokenSerializer(serializers.ModelSerializer):
 
 
 class CategorySerializer(serializers.ModelSerializer):
-    """Сериализатор категории."""
+    """Сериализатор категории для главной страницы."""
 
     image = Base64ImageField()
     max_cashback = serializers.SerializerMethodField()
@@ -237,6 +237,46 @@ class ServiceMainPageSerializer(serializers.ModelSerializer):
         return categories_data
 
 
+class RatingSerializer(serializers.ModelSerializer):
+    average_ratings = SerializerMethodField()
+
+    class Meta:
+        model = Rating
+        fields = "__all__"
+
+    def get_average_ratings(self, obj):
+        ratings = Rating.objects.filter(service=obj)
+        total_ratings = sum([rating.stars for rating in ratings])
+        if ratings:
+            return total_ratings / len(ratings)
+        return 0
+
+
+class CategoriesSerializer(serializers.ModelSerializer):
+    """Сериализатор для подробного отображения содержания категории."""
+
+    average_ratings = SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = (
+            "id",
+            "name",
+            "cashback_percentage",
+            "text",
+            "image",
+            "cost",
+            "average_ratings",
+        )
+
+    def get_average_ratings(self, obj):
+        ratings = Rating.objects.filter(service=obj)
+        total_ratings = sum([rating.stars for rating in ratings])
+        if ratings:
+            return total_ratings / len(ratings)
+        return 0
+
+
 class ServiceSerializer(serializers.ModelSerializer):
 
     category = serializers.ReadOnlyField(source="category.title")
@@ -367,20 +407,5 @@ class SellHistorySerializer(serializers.ModelSerializer):
             "service_image",
             "payment_date",
             "total",
-            "amount"
+            "amount",
         )
-
-
-class RatingSerializer(serializers.ModelSerializer):
-    average_ratings = SerializerMethodField()
-
-    class Meta:
-        model = Rating
-        fields = "__all__"
-
-    def get_average_retings(self, obj):
-        ratings = Rating.objects.filter(service=obj)
-        total_ratings = sum([rating.stars for rating in ratings])
-        if ratings:
-            return total_ratings / len(ratings)
-        return 0

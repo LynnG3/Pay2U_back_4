@@ -2,12 +2,13 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework import routers
 
-from .views import (CategoryViewSet, CustomUserViewSet, SellHistoryViewSet,
-                    ServiceViewSet, SubscribeView, SubscriptionPaidView,
-                    SubscriptionPaymentView, SubscriptionViewSet)
+from .views import (CategoriesViewSet, CategoryViewSet, CustomUserViewSet,
+                    SellHistoryViewSet, ServiceViewSet, SubscribeView,
+                    SubscriptionPaidView, SubscriptionPaymentView,
+                    SubscriptionViewSet)
 
 router_v1 = routers.DefaultRouter()
-router_v1.register(r"categories", CategoryViewSet)
+router_v1.register(r"categories", CategoriesViewSet, basename="categories")
 router_v1.register(r"users", CustomUserViewSet, basename="users")
 router_v1.register(r"services", ServiceViewSet, basename="services")
 router_v1.register(
@@ -20,7 +21,7 @@ router_v1.register(
 
 urlpatterns = [
     path("", include(router_v1.urls)),
-    path("catalog/", ServiceViewSet.as_view({"get": "list"}), name="catalog"),
+    path("catalog/", CategoryViewSet.as_view({"get": "list"}), name="catalog"),
     path("subscribe/", SubscribeView.as_view(), name="subscribe"),
     path(
         "subscription_payment/",
