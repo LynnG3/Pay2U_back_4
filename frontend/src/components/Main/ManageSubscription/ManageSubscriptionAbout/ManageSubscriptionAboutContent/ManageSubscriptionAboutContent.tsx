@@ -42,7 +42,7 @@ export default function ManageSubscriptionAboutContent() {
             color: ManageSubscriptionAboutContentData.isConeccted ? '#2A9B67' : '#C2C2C2'
           }}
         >
-          {ManageSubscriptionAboutContentData.isConeccted ? 'Подключен' : 'Не подключено'}
+          {ManageSubscriptionAboutContentData.isConeccted ? 'Подключен' : 'Не подключен'}
         </Typography>
       </Box>
       {ManageSubscriptionAboutContentData.isConeccted === true && (
@@ -81,7 +81,7 @@ export default function ManageSubscriptionAboutContent() {
           />
         </Box>
         <Typography sx={{ ...font, color: '#489865' }}>
-          ~ {ManageSubscriptionAboutContentData.profit}&#8381;
+          ~ {ManageSubscriptionAboutContentData.profit} &#8381;
         </Typography>
       </Box>
     </Box>

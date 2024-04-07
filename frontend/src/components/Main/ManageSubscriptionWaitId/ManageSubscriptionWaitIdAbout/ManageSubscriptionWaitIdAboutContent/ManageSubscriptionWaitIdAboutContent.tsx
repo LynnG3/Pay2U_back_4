@@ -73,7 +73,7 @@ export default function ManageSubscriptionWaitIdAboutContent() {
           />
         </Box>
         <Typography sx={{ ...font, color: '#489865' }}>
-          ~ {ManageSubscriptionWaitIdAboutData.profit}&#8381;
+          ~ {ManageSubscriptionWaitIdAboutData.profit} &#8381;
         </Typography>
       </Box>
     </Box>
