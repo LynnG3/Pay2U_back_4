@@ -8,7 +8,7 @@ pay2u.myddns.me
 
 #### документация к API доступна по адресу:
 ```bash
-pay2u.myddns.me
+pay2u.myddns.me/api/v1/schema/docs/
 ```
 
 ![Github Actions main workflow](https://github.com/LynnG3/Pay2U_back_4/actions/workflows/main.yml/badge.svg)
