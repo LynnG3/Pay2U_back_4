@@ -2,6 +2,7 @@ from django.contrib import admin
 
 from payments.models import Payment, TariffKind
 from .models import Category, Rating, Service, Subscription
+from payments.models import TariffKind, Payment
 
 admin.site.empty_value_display = 'Не задано'
 admin.site.site_header = 'Администрирование проекта "Pay2u"'
@@ -16,7 +17,7 @@ class RatingInline(admin.TabularInline):
     extra = 2
 
 
-class TariffInline(admin.TabularInline):
+class TariffKindInline(admin.TabularInline):
     model = TariffKind
     extra = 2
 
@@ -45,8 +46,8 @@ class ServiceAdmin(admin.ModelAdmin):
 
     inlines = (
         RatingInline,
-        TariffInline,
-        PaymentInline,
+        TariffKindInline,
+        PaymentInline
     )
     list_display = (
         "name",
