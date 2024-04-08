@@ -80,11 +80,11 @@ PROJECT_NAME=pay2u            # название образа для каждо�
 * собрать статику и скопировать её
 * запустить скрипт для создания суперюзера
 ```bash
-docker compose -f docker-compose.production.yml up --build -d
-docker compose -f docker-compose.production.yml exec backend python manage.py migrate
-docker compose -f docker-compose.production.yml exec backend python manage.py collectstatic  && \
-docker compose -f docker-compose.production.yml exec backend cp -r /app/static_backend/. /backend_static/static/
-docker compose -f docker-compose.production.yml exec backend bash create_superuser_script.sh
+docker compose up --build -d
+docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py collectstatic && \
+docker compose exec backend cp -r /app/static_backend/. /backend_static/static/
+docker compose exec backend bash create_superuser_script.sh
 ```
 
 ## Если вы используете удаленный сервер
