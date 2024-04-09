@@ -6,19 +6,28 @@ from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.generics import GenericAPIView
-from rest_framework.permissions import (IsAuthenticated,
-                                        IsAuthenticatedOrReadOnly)
+from rest_framework.permissions import (
+    IsAuthenticated,
+    IsAuthenticatedOrReadOnly,
+)
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from payments.models import Payment, TariffKind
 from services.models import Category, Rating, Service, Subscription
 from .permissions import IsOwner
-from .serializers import (CategoriesSerializer, CategorySerializer,
-                          CustomUserSerializer, PaymentSerializer,
-                          PromocodeSerializer, RatingSerializer,
-                          SellHistorySerializer, ServiceMainPageSerializer,
-                          ServiceSerializer, SubscriptionSerializer)
+from .serializers import (
+    CategoriesSerializer,
+    CategorySerializer,
+    CustomUserSerializer,
+    PaymentSerializer,
+    PromocodeSerializer,
+    RatingSerializer,
+    SellHistorySerializer,
+    ServiceMainPageSerializer,
+    ServiceSerializer,
+    SubscriptionSerializer,
+)
 
 User = get_user_model()
 
@@ -65,7 +74,7 @@ class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
     """Представление отдельных категорий со всеми сервисами."""
 
     serializer_class = CategoriesSerializer
-    queryset = Service.objects.select_related("category").all()
+    queryset = Service.objects.select_related("services").all()
 
 
 class SubscribeView(GenericAPIView):
@@ -84,6 +93,8 @@ class SubscribeView(GenericAPIView):
         except Service.DoesNotExist:
             return Response(status=status.HTTP_404_NOT_FOUND)
 
+
+@action()
 
 class SubscriptionPaymentView(GenericAPIView):
     """Оплата подписки на сервис."""
@@ -126,11 +137,12 @@ class SubscriptionPaidView(APIView):
 class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
 
     serializer_class = SellHistorySerializer
-    queryset = Payment.objects.all()
+    queryset = Payment.objects.select_related("payment_users").all()
+    permission_classes = (IsOwner,)
 
-    def get_queryset(self):
-        user = self.request.user
-        return Payment.objects.filter(user=user)
+    # def get_queryset(self):
+    #     user = self.request.user
+    #     return Payment.objects.filter(user=user)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):

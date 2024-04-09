@@ -12,7 +12,7 @@ from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import SerializerMethodField
 
-from payments.models import Cashback, Payment
+from payments.models import Cashback, Payment, TariffKind
 from services.models import Category, Rating, Service, Subscription
 
 User = get_user_model()
@@ -298,43 +298,51 @@ class ServiceSerializer(serializers.ModelSerializer):
         )
 
 
+class TariffSerializer(serializers.ModelSerializer):
+    """"""
+
+    trial = serializers.SerializerMethodField()
+
+    class Meta:
+        model = TariffKind
+        fields = "__all__"
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Cериализатор подписки."""
 
-    service = serializers.PrimaryKeyRelatedField(
-        queryset=Service.objects.all()
-    )
-    user = serializers.CurrentUserDefault()
-    start_date = serializers.DateTimeField(read_only=True)
-    expiry_date = serializers.DateTimeField(read_only=True)
-    tariff = serializers.PrimaryKeyRelatedField(
-        queryset=Payment.objects.select_related("tariff_kind").all()
-    )
+    tariff = TariffSerializer(many=True)
 
     class Meta:
-        model = Subscription
-        fields = "__all__"
-
-    def create(self, validated_data):
-        user = self.context['request'].user
-        service = validated_data['service']
-        trial = validated_data.get('trial', False)
-        subscription, created = Subscription.objects.get_or_create(
-            user=user, service=service, defaults=validated_data
+        model = Service
+        fields = (
+            "image",
+            "id",
+            "name",
+            "text",
+            "cashback_percentage",
+            "tariff",
         )
-        if trial and created:
-            validated_data['trial'] = True
-            validated_data['expiry_date'] = (
-                datetime.date.today() + datetime.timedelta(days=30)
-            )
-            Subscription.objects.create(**validated_data)
-            return response.Response(
-                {"message": "Пробный период подключен"},
-                status=status.HTTP_201_CREATED
-            )
-        else:
-            return subscription
 
+    # def create(self, validated_data):
+    #     user = self.context['request'].user
+    #     service = validated_data['service']
+    #     trial = validated_data.get('trial', False)
+    #     subscription, created = Subscription.objects.get_or_create(
+    #         user=user, service=service, defaults=validated_data
+    #     )
+    #     if trial and created:
+    #         validated_data['trial'] = True
+    #         validated_data['expiry_date'] = (
+    #             datetime.date.today() + datetime.timedelta(days=30)
+    #         )
+    #         Subscription.objects.create(**validated_data)
+    #         return response.Response(
+    #             {"message": "Пробный период подключен"},
+    #             status=status.HTTP_201_CREATED
+    #         )
+    #     else:
+    #         return subscription
 
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
