@@ -12,7 +12,7 @@ from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import SerializerMethodField
 
-from payments.models import Cashback, Payment, TariffKind
+from payments.models import Cashback, TariffKind, Payment
 from services.models import Category, Rating, Service, Subscription
 
 User = get_user_model()
@@ -298,51 +298,80 @@ class ServiceSerializer(serializers.ModelSerializer):
         )
 
 
-class TariffSerializer(serializers.ModelSerializer):
-    """"""
-
-    trial = serializers.SerializerMethodField()
+class TariffKindSerializer(serializers.ModelSerializer):
+    """Cериализатор информации о тарифе. """
 
     class Meta:
         model = TariffKind
-        fields = "__all__"
+        fields = (
+            "id",
+            "name",
+            "duration",
+            "cost_per_month",
+            "cost_total",
+            "description"
+        )
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    """Cериализатор оформления подписки на сервис."""
+
+    tariffs = SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cashback_percentage",
+            "tariffs"
+        )
+
+    def get_tariffs(self, obj):
+        # Метод для получения данных о тарифах для сервиса
+        tariffs = TariffKind.objects.filter(service=obj)
+        serializer = TariffKindSerializer(tariffs, many=True)
+        return serializer.data
 
 
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Cериализатор подписки."""
 
-    tariff = TariffSerializer(many=True)
+    service = serializers.PrimaryKeyRelatedField(
+        queryset=Service.objects.all()
+    )
+    user = serializers.CurrentUserDefault()
+    start_date = serializers.DateTimeField(read_only=True)
+    expiry_date = serializers.DateTimeField(read_only=True)
+    tariff = serializers.PrimaryKeyRelatedField(
+        queryset=Payment.objects.select_related("tariff_kind").all()
+    )
 
     class Meta:
         model = Service
-        fields = (
-            "image",
-            "id",
-            "name",
-            "text",
-            "cashback_percentage",
-            "tariff",
-        )
+        fields = "__all__"
 
-    # def create(self, validated_data):
-    #     user = self.context['request'].user
-    #     service = validated_data['service']
-    #     trial = validated_data.get('trial', False)
-    #     subscription, created = Subscription.objects.get_or_create(
-    #         user=user, service=service, defaults=validated_data
-    #     )
-    #     if trial and created:
-    #         validated_data['trial'] = True
-    #         validated_data['expiry_date'] = (
-    #             datetime.date.today() + datetime.timedelta(days=30)
-    #         )
-    #         Subscription.objects.create(**validated_data)
-    #         return response.Response(
-    #             {"message": "Пробный период подключен"},
-    #             status=status.HTTP_201_CREATED
-    #         )
-    #     else:
-    #         return subscription
+    def create(self, validated_data):
+        user = self.context['request'].user
+        service = validated_data['service']
+        trial = validated_data.get('trial', False)
+        subscription, created = Subscription.objects.get_or_create(
+            user=user, service=service, defaults=validated_data
+        )
+        if trial and created:
+            validated_data['trial'] = True
+            validated_data['expiry_date'] = (
+                datetime.date.today() + datetime.timedelta(days=30)
+            )
+            Subscription.objects.create(**validated_data)
+            return response.Response(
+                {"message": "Пробный период подключен"},
+                status=status.HTTP_201_CREATED
+            )
+        else:
+            return subscription
+
 
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
@@ -351,7 +380,14 @@ class PaymentSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Payment
-        fields = "__all__"
+        fields = (
+            "id",
+            "service",
+            "tariff_kind",
+            "total",
+            "accept_rules",
+            "is_trial"
+        )
 
     def get_is_trial(self, obj):
         subscription = obj.subscription
@@ -370,6 +406,10 @@ class PaymentSerializer(serializers.ModelSerializer):
             )
             return payment
         return super().create(validated_data)
+
+
+class PaymentGetSerializer(serializers.ModelSerializer):
+    """Cериализатор просмотра данных оплаты подписки ."""
 
 
 class PromocodeSerializer(serializers.ModelSerializer):

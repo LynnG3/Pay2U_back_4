@@ -23,7 +23,7 @@ CASHBACK_CHOICES = ()
 
 
 class TariffKind(models.Model):
-    """Модель разновидности тарифа по длительности."""
+    """Модель разновидности тарифа."""
 
     service = models.ForeignKey(
         Service,

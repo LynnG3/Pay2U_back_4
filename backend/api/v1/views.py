@@ -26,6 +26,7 @@ from .serializers import (
     SellHistorySerializer,
     ServiceMainPageSerializer,
     ServiceSerializer,
+    SubscribeSerializer,
     SubscriptionSerializer,
 )
 
@@ -44,10 +45,7 @@ class CustomUserViewSet(UserViewSet):
 
 
 class ServiceViewSet(viewsets.ReadOnlyModelViewSet):
-    """Представление главной страницы,
-    списков сервисов и отдельного сервиса,
-    Обрабатывает запросы к главной странице,
-    каталогам сервисов и странице отдельного сервиса.
+    """Представление сервисов на главной странице.
     """
 
     serializer_class = ServiceMainPageSerializer
@@ -77,24 +75,23 @@ class CategoriesViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Service.objects.select_related("services").all()
 
 
-class SubscribeView(GenericAPIView):
+class SubscribeViewSet(viewsets.GenericViewSet):
     """Оформление подписки на сервис."""
 
-    serializer_class = SubscriptionSerializer
-    queryset = Subscription.objects.all()
+    serializer_class = SubscribeSerializer
+    # queryset = Service.objects.all()
 
-    def post(self, request):
-        service_id = request.data.get("service_id")
-        user = request.user
-        try:
-            service = Service.objects.get(id=service_id)
-            Subscription.objects.create(user=user, service=service)
-            return Response(status=status.HTTP_200_OK)
-        except Service.DoesNotExist:
-            return Response(status=status.HTTP_404_NOT_FOUND)
+    def get_object(self, service_id):
+        object = Service.objects.filter(id=service_id).first()
+        return object
 
+    def retrieve(self, request, pk=None):
+        service = self.get_object(pk)
+        if service:
+            serializer = self.serializer_class(service)
+            return Response(serializer.data)
+        return Response({"error": "Сервис не найден"}, status=404)
 
-@action()
 
 class SubscriptionPaymentView(GenericAPIView):
     """Оплата подписки на сервис."""
@@ -102,10 +99,19 @@ class SubscriptionPaymentView(GenericAPIView):
     serializer_class = PaymentSerializer
     queryset = Payment.objects.all()
 
+    # def post(self, request):
+    #     callback = True
+    #     if callback:
+    #         return redirect("subscription_paid")
+    #     else:
+    #         return Response(
+    #             {"message": "Проблема на стороне банка"},
+    #             status=status.HTTP_404_NOT_FOUND,
+    #         )
     def post(self, request):
         callback = True
         if callback:
-            return redirect("subscription_paid")
+            return Response(status=status.HTTP_200_OK)
         else:
             return Response(
                 {"message": "Проблема на стороне банка"},
