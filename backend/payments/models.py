@@ -1,14 +1,14 @@
 from django.contrib.auth import get_user_model
 from django.db import models
 
-from services.models import Service, Subscription
+from services.models import Service
 
 User = get_user_model()
 
-CALLBACK_CHOICES = (
-    ("accepted", "Принят"),
-    ("denied", "Отклонен"),
-)
+# CALLBACK_CHOICES = (
+#     ("accepted", "Принят"),
+#     ("denied", "Отклонен"),
+# )
 
 DISCOUNT = 0.8
 
@@ -106,12 +106,6 @@ class Payment(models.Model):
         verbose_name="Сервис",
         related_name="payment_services",
     )
-    subscription = models.ForeignKey(
-        Subscription,
-        on_delete=models.CASCADE,
-        verbose_name="Подписка",
-        related_name="payment_subscriptions",
-    )
     tariff_kind = models.ForeignKey(
         TariffKind,
         on_delete=models.CASCADE,
@@ -125,19 +119,22 @@ class Payment(models.Model):
         default=False,
         verbose_name="Согласие с правилами",
     )
-    # заглушка для ответа банка
-    callback = models.CharField(
-        max_length=10,
-        choices=CALLBACK_CHOICES,
-        verbose_name="Ответ от банка",
+    callback = models.BooleanField(
+        default=False, verbose_name="Ответ от банка"
     )
     payment_date = models.DateTimeField(
         auto_now_add=True,
         db_index=True,
         verbose_name="Дата оплаты",
     )
-    next_payment_date = models.DateField()
-    next_payment_amount = models.PositiveIntegerField()
+    next_payment_date = models.DateField(
+        blank=True,
+        null=True
+    )
+    next_payment_amount = models.PositiveIntegerField(
+        blank=True,
+        null=True
+    )
 
     class Meta:
         ordering = ["-payment_date"]

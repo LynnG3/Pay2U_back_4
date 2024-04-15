@@ -1,11 +1,10 @@
 import datetime
 
 from django.contrib.auth import get_user_model
-from django.shortcuts import redirect
 from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
-from rest_framework.generics import GenericAPIView
+# from rest_framework.generics import GenericAPIView
 from rest_framework.permissions import (
     IsAuthenticated,
     IsAuthenticatedOrReadOnly,
@@ -93,26 +92,42 @@ class SubscribeViewSet(viewsets.GenericViewSet):
         return Response({"error": "Сервис не найден"}, status=404)
 
 
-class SubscriptionPaymentView(GenericAPIView):
+class SubscriptionPaymentViewSet(viewsets.ViewSet):
     """Оплата подписки на сервис."""
 
     serializer_class = PaymentSerializer
-    queryset = Payment.objects.all()
 
-    # def post(self, request):
-    #     callback = True
-    #     if callback:
-    #         return redirect("subscription_paid")
-    #     else:
-    #         return Response(
-    #             {"message": "Проблема на стороне банка"},
-    #             status=status.HTTP_404_NOT_FOUND,
-    #         )
-    def post(self, request):
-        callback = True
+    def create(self, request, *args, **kwargs):
+        serializer = self.serializer_class(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        service_id = request.data.get("service_id")
+        if not service_id:
+            return Response(
+                {"message": "Не указан идентификатор сервиса"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        payment = serializer.save(service_id=service_id)
+
+        # Отправка данных на стороннее API банка
+        # bank_api_url = "https://api.bank.com/payments"
+        # payment_data = {
+        #     "name": payment.tariff_kind.name,
+        #     "amount": payment.total,
+        #     "user_data": {
+        #         "username": request.user.username,
+        #         "email": request.user.email,
+        #     },
+        #     "card_number":...
+        # }
+
+        callback = True  # Имитация успешной обработки платежа
         if callback:
-            return Response(status=status.HTTP_200_OK)
+            payment.save()
+            data = serializer.data.copy()
+            data.pop("is_trial")
+            return Response(data, status=status.HTTP_201_CREATED)
         else:
+            # Обработка случая, когда платеж не прошел
             return Response(
                 {"message": "Проблема на стороне банка"},
                 status=status.HTTP_404_NOT_FOUND,
@@ -146,9 +161,9 @@ class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Payment.objects.select_related("payment_users").all()
     permission_classes = (IsOwner,)
 
-    # def get_queryset(self):
-    #     user = self.request.user
-    #     return Payment.objects.filter(user=user)
+    def get_queryset(self):
+        user = self.request.user
+        return Payment.objects.filter(user=user)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):

@@ -4,7 +4,7 @@ from rest_framework import routers
 
 from .views import (CategoriesViewSet, CategoryViewSet, CustomUserViewSet,
                     SellHistoryViewSet, ServiceViewSet, SubscribeViewSet,
-                    SubscriptionPaymentView,
+                    SubscriptionPaymentViewSet,
                     SubscriptionViewSet)
 
 router_v1 = routers.DefaultRouter()
@@ -21,16 +21,21 @@ router_v1.register(
 router_v1.register(
     r"subscribe", SubscribeViewSet, basename="subscribe"
 )
+router_v1.register(
+    r"subscription_payment",
+    SubscriptionPaymentViewSet,
+    basename="subscription_payment"
+)
 
 urlpatterns = [
     path("", include(router_v1.urls)),
     path("catalog/", CategoryViewSet.as_view({"get": "list"}), name="catalog"),
     # path("subscribe/", SubscribeView.as_view(), name="subscribe"),
-    path(
-        "subscription_payment/",
-        SubscriptionPaymentView.as_view(),
-        name="subscription_payment",
-    ),
+    # path(
+    #     "subscription_payment/",
+    #     SubscriptionPaymentView.as_view(),
+    #     name="subscription_payment",
+    # ),
     # path(
     #     "subscription_paid/",
     #     SubscriptionPaidView.as_view(),
