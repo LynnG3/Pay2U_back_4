@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth import get_user_model
+# from django.shortcuts import get_object_or_404
 from djoser.views import UserViewSet
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
@@ -27,6 +28,7 @@ from .serializers import (
     ServiceSerializer,
     SubscribeSerializer,
     SubscriptionSerializer,
+    # TariffKindSerializer
 )
 
 User = get_user_model()
@@ -97,41 +99,92 @@ class SubscriptionPaymentViewSet(viewsets.ViewSet):
 
     serializer_class = PaymentSerializer
 
-    def create(self, request, *args, **kwargs):
-        serializer = self.serializer_class(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        service_id = request.data.get("service_id")
-        if not service_id:
-            return Response(
-                {"message": "Не указан идентификатор сервиса"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        payment = serializer.save(service_id=service_id)
-
-        # Отправка данных на стороннее API банка
-        # bank_api_url = "https://api.bank.com/payments"
-        # payment_data = {
-        #     "name": payment.tariff_kind.name,
-        #     "amount": payment.total,
-        #     "user_data": {
-        #         "username": request.user.username,
-        #         "email": request.user.email,
-        #     },
-        #     "card_number":...
-        # }
-
-        callback = True  # Имитация успешной обработки платежа
-        if callback:
-            payment.save()
-            data = serializer.data.copy()
-            data.pop("is_trial")
-            return Response(data, status=status.HTTP_201_CREATED)
+    def create(self, request, service_id, tariff_kind_id):
+        # # Добавляем service_id и tariff_kind_id в данные запроса
+        # request.data['service_id'] = service_id
+        # request.data['tariff_kind_id'] = tariff_kind_id
+        # Обработка POST запроса для создания платежа
+        serializer = self.serializer_class(
+            data=request.data,
+            context={
+                'request': request,
+                'service_id': service_id,
+                'tariff_kind_id': tariff_kind_id
+            }
+        )
+        if serializer.is_valid():
+            # Создаем платеж
+            payment = serializer.save()
+            # Отправка данных на стороннее API банка
+            # bank_api_url = "https://api.bank.com/payments"
+            # payment_data = {
+            #     "name": payment.tariff_kind.name,
+            #     "amount": payment.total,
+            #     "user_data": {
+            #         "username": request.user.username,
+            #         "email": request.user.email,
+            #     },
+            #     "card_number":...
+            # }
+            callback = True  # Имитация успешной обработки платежа
+            if callback:
+                payment.callback = True
+                payment.save()
+                return Response(
+                    {"id": payment.id,
+                     "service_id": payment.service_id},
+                    status=status.HTTP_201_CREATED,
+                )
+            else:
+                return Response(
+                    {"message": "Проблема на стороне банка"},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
         else:
-            # Обработка случая, когда платеж не прошел
+            # Обработка невалидных данных
+            return self.handle_invalid_data(serializer.errors)
+
+    def retrieve(self, request, *args, **kwargs):
+        # Извлекаем идентификаторы сервиса и тарифного плана из URL
+        service_id = self.kwargs.get('service_id')
+        tariff_kind_id = self.kwargs.get('tariff_kind_id')
+
+        # Обработка GET запроса для получения данных перед оплатой
+        if not request.user.is_authenticated:
             return Response(
-                {"message": "Проблема на стороне банка"},
-                status=status.HTTP_404_NOT_FOUND,
+                {"error": "Необходима аутентификация пользователя"},
+                status=status.HTTP_401_UNAUTHORIZED
             )
+        # Получение сервиса и тарифа
+        try:
+            service = Service.objects.get(pk=service_id)
+            tariff_kind = TariffKind.objects.get(pk=tariff_kind_id)
+        except (Service.DoesNotExist, TariffKind.DoesNotExist):
+            return Response(
+                {"error": "Сервис или тарифный план не найден"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        # Формирование данных для ответа
+        payment_data = {
+            'service': service.id,
+            'tariff_kind': tariff_kind.id,
+            # 'user': request.user.id,
+            'accept_rules': True,
+            'total': tariff_kind.cost_total,
+            'phone_number': request.user.phone_number,
+            # 'is_trial': True
+        }
+        payment_instance = Payment(service=service, tariff_kind=tariff_kind)
+        serializer = self.serializer_class(instance=payment_instance, context={'request': request})
+        is_trial = serializer.get_is_trial(payment_instance)
+        # Добавляем is_trial в данные для ответа
+        payment_data['is_trial'] = is_trial
+        return Response(payment_data)
+
+    def handle_invalid_data(self, serializer_errors):
+        # Обработка невалидных данных
+        error_messages = {"errors": serializer_errors}
+        return Response(error_messages, status=status.HTTP_400_BAD_REQUEST)
 
 
 class SubscriptionPaidView(APIView):

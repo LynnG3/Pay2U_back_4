@@ -21,21 +21,21 @@ router_v1.register(
 router_v1.register(
     r"subscribe", SubscribeViewSet, basename="subscribe"
 )
-router_v1.register(
-    r"subscription_payment",
-    SubscriptionPaymentViewSet,
-    basename="subscription_payment"
-)
+# router_v1.register(
+#     r"subscription_payment",
+#     SubscriptionPaymentViewSet,
+#     basename="subscription_payment"
+# )
 
 urlpatterns = [
     path("", include(router_v1.urls)),
     path("catalog/", CategoryViewSet.as_view({"get": "list"}), name="catalog"),
-    # path("subscribe/", SubscribeView.as_view(), name="subscribe"),
-    # path(
-    #     "subscription_payment/",
-    #     SubscriptionPaymentView.as_view(),
-    #     name="subscription_payment",
-    # ),
+    path(
+        'subscription_payment/<int:service_id>/<int:tariff_kind_id>/',
+        SubscriptionPaymentViewSet.as_view(
+            {'get': 'retrieve', 'post': 'create'}
+        ), name='subscription_payment'
+    ),
     # path(
     #     "subscription_paid/",
     #     SubscriptionPaidView.as_view(),

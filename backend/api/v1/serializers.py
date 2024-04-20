@@ -377,88 +377,105 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
 
+    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
     service_id = serializers.IntegerField(write_only=True)
-    # user = serializers.IntegerField(write_only=True)
-    user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-    # tariff_kind = serializers.PrimaryKeyRelatedField(
-    #     queryset=TariffKind.objects.all()
-    # )
     tariff_kind_id = serializers.IntegerField(write_only=True)
+    phone_number = serializers.SerializerMethodField(read_only=True)
     total = serializers.ReadOnlyField()
     is_trial = SerializerMethodField()
 
     class Meta:
         model = Payment
         fields = (
-            "id",
-            "user",
-            "service_id",
             "tariff_kind_id",
+            "service_id",
+            "service",
+            "tariff_kind",
             "total",
+            "phone_number",
             "accept_rules",
             "is_trial",
             "payment_date",
             "next_payment_date",
             "next_payment_amount"
         )
+        read_only_fields = (
+            "total",
+            "is_trial",
+            "payment_date",
+            "next_payment_date",
+            "next_payment_amount"
+        )
+
+    def get_phone_number(self, instance):
+        return instance.user.phone_number if instance.user else None
 
     def get_is_trial(self, instance):
         """Определяет доступность пробного периода."""
-        if not instance:
-            return False  # Возвращаем False если экземпляр не установлен
         past_payments = Payment.objects.filter(
-            service=instance.service, user=instance.user
+            service=instance.service, user=self.context['request'].user
         )
         return not past_payments.exists()
 
-    def get_next_payment_date(self, obj):
-        """Возвращает дату следующего платежа."""
-        if 'tariff_kind' in self.context:
-            tariff_kind = self.context['tariff_kind']
-            return datetime.now().date() + timedelta(days=30 * tariff_kind.duration)
-        return None
+    def calculate_total(self, tariff_kind):
+        """Рассчитывает общую сумму платежа на основе тарифа."""
+        total = tariff_kind.cost_total
+        is_trial = self.get_is_trial(tariff_kind)
+        if is_trial:
+            total = 1
+        return total
 
-    def get_next_payment_amount(self, obj):
-        """Возвращает сумму следующего платежа."""
-        if 'tariff_kind' in self.context:
-            tariff_kind = self.context['tariff_kind']
-            return tariff_kind.cost_total
-        return None
-    
+    def get_next_payment_date(self, tariff_kind):
+        """Возвращает дату следующего платежа."""
+        return datetime.now().date() + timedelta(
+            days=30 * tariff_kind.duration
+        )
+
     def create(self, validated_data):
-        print(validated_data)
         service_id = validated_data.pop('service_id')
         tariff_kind_id = validated_data.pop('tariff_kind_id')
-        user = validated_data.pop('user')
         service = get_object_or_404(Service, pk=service_id)
         tariff_kind = get_object_or_404(TariffKind, pk=tariff_kind_id)
-        # Рассчитываем дату следующего платежа
-        # current_payment_date = datetime.now().date()
+        user = self.context["request"].user
+        accept_rules = validated_data.get("accept_rules")
+        if not accept_rules:
+            raise serializers.ValidationError(
+                "Вы должны согласиться с правилами."
+            )
+        # Получаем total и дату след платежа из отдельных методов
+        total = self.calculate_total(tariff_kind)
+        next_payment_date = self.get_next_payment_date(tariff_kind)
         payment = Payment.objects.create(
             service=service,
             user=user,
             tariff_kind=tariff_kind,
-            # next_payment_date=datetime.now().date() + timedelta(
-            #     days=30 * tariff_kind.duration
-            # ),
-            # next_payment_amount=tariff_kind.cost_total,
+            total=total,
+            next_payment_date=next_payment_date,
             **validated_data
         )
-        self.instance = payment
-        is_trial = self.get_is_trial(payment)
-        if is_trial:
-            payment.total = 1
-        else:
-            payment.total = tariff_kind.cost_total
-        payment.next_payment_date = self.get_next_payment_date(payment)
-        payment.next_payment_amount = self.get_next_payment_amount(payment)
+        payment.next_payment_amount = total
         payment.save()
         return payment
 
-    def to_representation(self, instance):
-        data = super().to_representation(instance)
-        data['is_trial'] = self.get_is_trial(instance)
-        return data
+    # def to_representation(self, instance):
+    #     data = super().to_representation(instance)
+    #     service_id = data.get('service_id')
+    #     user = instance.user
+    #     # user = (
+    #     #     self.context.get('request').user
+    #     #     if 'request' in self.context
+    #     #     else None
+    #     # )
+    #     if service_id and user:
+    #         past_payments = Payment.objects.filter(
+    #             service_id=service_id, user=user
+    #         )
+    #         is_trial = not past_payments.exists()
+    #         data['is_trial'] = is_trial
+    #     else:
+    #         data['is_trial'] = False
+
+    #     return data
 
 
 class PaymentGetSerializer(serializers.ModelSerializer):
