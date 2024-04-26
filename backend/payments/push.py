@@ -1,6 +1,7 @@
 from push_notifications.models import APNSDevice
 
 
+
 def send_push_notification(device_id, message):
     """Заготовка для пуш-уведомлений."""
     device = APNSDevice.objects.get(device_id=device_id)
