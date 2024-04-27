@@ -214,15 +214,27 @@ class SubscriptionPaidView(APIView):
         )
 
 
+# class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
+
+#     serializer_class = SellHistorySerializer
+#     queryset = Payment.objects.select_related("payment_users").all()
+#     permission_classes = (IsOwner,)
+
+#     def get_queryset(self):
+#         user = self.request.user
+#         return Payment.objects.filter(user=user)
+
+
 class SellHistoryViewSet(viewsets.ReadOnlyModelViewSet):
 
-    serializer_class = SellHistorySerializer
-    queryset = Payment.objects.select_related("payment_users").all()
-    permission_classes = (IsOwner,)
+    serializer_class = PaymentPostSerializer
+    queryset = Payment.objects.select_related("user").all()
+    permission_classes = (IsAuthenticated, IsOwner,)
 
-    def get_queryset(self):
-        user = self.request.user
-        return Payment.objects.filter(user=user)
+    def list(self, request, *args, **kwargs):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
 
 
 class SubscriptionViewSet(viewsets.ViewSet):
