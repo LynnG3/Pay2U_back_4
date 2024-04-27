@@ -374,6 +374,10 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             return subscription
 
 
+class PaymentBaseSerializer(serializers.ModelSerializer):
+    """Базовый сериализатор оплаты подписки ."""
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
 
@@ -396,19 +400,83 @@ class PaymentSerializer(serializers.ModelSerializer):
             "accept_rules",
             "is_trial",
             "payment_date",
-            "next_payment_date",
-            "next_payment_amount"
         )
         read_only_fields = (
             "total",
             "is_trial",
             "payment_date",
-            "next_payment_date",
-            "next_payment_amount"
         )
 
     def get_phone_number(self, instance):
         return instance.user.phone_number if instance.user else None
+
+    def get_is_trial(self, instance):
+        """Определяет доступность пробного периода."""
+        past_payments = Payment.objects.filter(
+            service=instance.service, user=self.context['request'].user
+        )
+        return not past_payments.exists()
+
+    def calculate_total(self, tariff_kind):
+        """Рассчитывает общую сумму платежа на основе тарифа."""
+        total = tariff_kind.cost_total
+        is_trial = self.get_is_trial(tariff_kind)
+        if is_trial:
+            total = 1
+        return total
+
+
+class PaymentPostSerializer(serializers.ModelSerializer):
+    """Сериализатор оплаты подписки для POST запросов."""
+
+    total = serializers.ReadOnlyField()
+    is_trial = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.IntegerField()
+    tariff_kind_id = serializers.IntegerField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            "service_id",
+            "tariff_kind_id",
+            "total",
+            "accept_rules",
+            "is_trial",
+            "payment_date",
+            "next_payment_date",
+            "next_payment_amount",
+        )
+
+    def create(self, validated_data):
+        service_id = validated_data.pop("service_id")
+        tariff_kind_id = validated_data.pop("tariff_kind_id")
+        accept_rules = validated_data.pop("accept_rules", True)
+        if not service_id or not tariff_kind_id:
+            raise serializers.ValidationError(
+                "Не указаны сервис или тарифный план."
+            )
+        user = self.context["request"].user
+        if not accept_rules:
+            raise serializers.ValidationError(
+                "Вы должны согласиться с правилами."
+            )
+        # Получаем total и дату следующего платежа из отдельных методов
+        tariff_kind = TariffKind.objects.get(pk=tariff_kind_id)
+        total = self.calculate_total(tariff_kind)
+        next_payment_date = self.get_next_payment_date(tariff_kind)
+        validated_data.pop("next_payment_date", None)
+        payment = Payment.objects.create(
+            service_id=service_id,
+            user=user,
+            tariff_kind_id=tariff_kind_id,
+            total=total,
+            next_payment_date=next_payment_date,
+            accept_rules=True,
+            **validated_data
+        )
+        payment.next_payment_amount = total
+        payment.save()
+        return payment
 
     def get_is_trial(self, instance):
         """Определяет доступность пробного периода."""
@@ -430,56 +498,6 @@ class PaymentSerializer(serializers.ModelSerializer):
         return datetime.now().date() + timedelta(
             days=30 * tariff_kind.duration
         )
-
-    def create(self, validated_data):
-        service_id = validated_data.pop('service_id')
-        tariff_kind_id = validated_data.pop('tariff_kind_id')
-        service = get_object_or_404(Service, pk=service_id)
-        tariff_kind = get_object_or_404(TariffKind, pk=tariff_kind_id)
-        user = self.context["request"].user
-        accept_rules = validated_data.get("accept_rules")
-        if not accept_rules:
-            raise serializers.ValidationError(
-                "Вы должны согласиться с правилами."
-            )
-        # Получаем total и дату след платежа из отдельных методов
-        total = self.calculate_total(tariff_kind)
-        next_payment_date = self.get_next_payment_date(tariff_kind)
-        payment = Payment.objects.create(
-            service=service,
-            user=user,
-            tariff_kind=tariff_kind,
-            total=total,
-            next_payment_date=next_payment_date,
-            **validated_data
-        )
-        payment.next_payment_amount = total
-        payment.save()
-        return payment
-
-    # def to_representation(self, instance):
-    #     data = super().to_representation(instance)
-    #     service_id = data.get('service_id')
-    #     user = instance.user
-    #     # user = (
-    #     #     self.context.get('request').user
-    #     #     if 'request' in self.context
-    #     #     else None
-    #     # )
-    #     if service_id and user:
-    #         past_payments = Payment.objects.filter(
-    #             service_id=service_id, user=user
-    #         )
-    #         is_trial = not past_payments.exists()
-    #         data['is_trial'] = is_trial
-    #     else:
-    #         data['is_trial'] = False
-
-    #     return data
-
-
-class PaymentGetSerializer(serializers.ModelSerializer):
-    """Cериализатор просмотра данных оплаты подписки ."""
 
 
 class PromocodeSerializer(serializers.ModelSerializer):
