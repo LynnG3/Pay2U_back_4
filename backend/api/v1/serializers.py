@@ -2,17 +2,18 @@
 import datetime
 import random
 import string
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 from django.contrib.auth import get_user_model
 from django.db.models import Max
+from django.shortcuts import get_object_or_404
 from djoser.serializers import UserCreateSerializer, UserSerializer
 from drf_extra_fields.fields import Base64ImageField
 from rest_framework import response, serializers, status
 from rest_framework.authtoken.models import Token
 from rest_framework.serializers import SerializerMethodField
 
-from payments.models import Cashback, Payment
+from payments.models import Cashback, TariffKind, Payment
 from services.models import Category, Rating, Service, Subscription
 
 User = get_user_model()
@@ -298,6 +299,43 @@ class ServiceSerializer(serializers.ModelSerializer):
         )
 
 
+class TariffKindSerializer(serializers.ModelSerializer):
+    """Cериализатор информации о тарифе. """
+
+    class Meta:
+        model = TariffKind
+        fields = (
+            "id",
+            "name",
+            "duration",
+            "cost_per_month",
+            "cost_total",
+            "description"
+        )
+
+
+class SubscribeSerializer(serializers.ModelSerializer):
+    """Cериализатор оформления подписки на сервис."""
+
+    tariffs = SerializerMethodField()
+
+    class Meta:
+        model = Service
+        fields = (
+            "id",
+            "name",
+            "image",
+            "cashback_percentage",
+            "tariffs"
+        )
+
+    def get_tariffs(self, obj):
+        # Метод для получения данных о тарифах для сервиса
+        tariffs = TariffKind.objects.filter(service=obj)
+        serializer = TariffKindSerializer(tariffs, many=True)
+        return serializer.data
+
+
 class SubscriptionSerializer(serializers.ModelSerializer):
     """Cериализатор подписки."""
 
@@ -312,7 +350,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     )
 
     class Meta:
-        model = Subscription
+        model = Service
         fields = "__all__"
 
     def create(self, validated_data):
@@ -336,32 +374,130 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             return subscription
 
 
+class PaymentBaseSerializer(serializers.ModelSerializer):
+    """Базовый сериализатор оплаты подписки ."""
+
+
 class PaymentSerializer(serializers.ModelSerializer):
     """Cериализатор оплаты подписки ."""
 
+    # user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+    service_id = serializers.IntegerField(write_only=True)
+    tariff_kind_id = serializers.IntegerField(write_only=True)
+    phone_number = serializers.SerializerMethodField(read_only=True)
+    total = serializers.ReadOnlyField()
     is_trial = SerializerMethodField()
 
     class Meta:
         model = Payment
-        fields = "__all__"
+        fields = (
+            "tariff_kind_id",
+            "service_id",
+            "service",
+            "tariff_kind",
+            "total",
+            "phone_number",
+            "accept_rules",
+            "is_trial",
+            "payment_date",
+        )
+        read_only_fields = (
+            "total",
+            "is_trial",
+            "payment_date",
+        )
 
-    def get_is_trial(self, obj):
-        subscription = obj.subscription
-        return subscription.trial
+    def get_phone_number(self, instance):
+        return instance.user.phone_number if instance.user else None
+
+    def get_is_trial(self, instance):
+        """Определяет доступность пробного периода."""
+        past_payments = Payment.objects.filter(
+            service=instance.service, user=self.context['request'].user
+        )
+        return not past_payments.exists()
+
+    def calculate_total(self, tariff_kind):
+        """Рассчитывает общую сумму платежа на основе тарифа."""
+        total = tariff_kind.cost_total
+        is_trial = self.get_is_trial(tariff_kind)
+        if is_trial:
+            total = 1
+        return total
+
+
+class PaymentPostSerializer(serializers.ModelSerializer):
+    """Сериализатор оплаты подписки для POST запросов."""
+
+    total = serializers.ReadOnlyField()
+    is_trial = serializers.SerializerMethodField(read_only=True)
+    service_id = serializers.IntegerField()
+    tariff_kind_id = serializers.IntegerField()
+
+    class Meta:
+        model = Payment
+        fields = (
+            "service_id",
+            "tariff_kind_id",
+            "total",
+            "accept_rules",
+            "is_trial",
+            "payment_date",
+            "next_payment_date",
+            "next_payment_amount",
+        )
 
     def create(self, validated_data):
-        tariffs_payment = validated_data.get("tariff_kind")
-        is_trial = self.get_is_trial(validated_data)
-        if is_trial:
-            tariffs_payment.cost_total = 1
-        next_payment_date = validated_data.get("pub_date") + 30
-        next_payment_amount = tariffs_payment.cost_total
-        if validated_data.get("callback") is True:
-            payment = Payment.objects.create(
-                next_payment_amount, next_payment_date, **validated_data
+        service_id = validated_data.pop("service_id")
+        tariff_kind_id = validated_data.pop("tariff_kind_id")
+        accept_rules = validated_data.pop("accept_rules", True)
+        if not service_id or not tariff_kind_id:
+            raise serializers.ValidationError(
+                "Не указаны сервис или тарифный план."
             )
-            return payment
-        return super().create(validated_data)
+        user = self.context["request"].user
+        if not accept_rules:
+            raise serializers.ValidationError(
+                "Вы должны согласиться с правилами."
+            )
+        # Получаем total и дату следующего платежа из отдельных методов
+        tariff_kind = TariffKind.objects.get(pk=tariff_kind_id)
+        total = self.calculate_total(tariff_kind)
+        next_payment_date = self.get_next_payment_date(tariff_kind)
+        validated_data.pop("next_payment_date", None)
+        payment = Payment.objects.create(
+            service_id=service_id,
+            user=user,
+            tariff_kind_id=tariff_kind_id,
+            total=total,
+            next_payment_date=next_payment_date,
+            accept_rules=True,
+            **validated_data
+        )
+        payment.next_payment_amount = total
+        payment.save()
+        return payment
+
+    def get_is_trial(self, instance):
+        """Определяет доступность пробного периода."""
+        past_payments = Payment.objects.filter(
+            service=instance.service, user=self.context['request'].user
+        )
+        return not past_payments.exists()
+
+    def calculate_total(self, tariff_kind):
+        """Рассчитывает общую сумму платежа на основе тарифа."""
+        total = tariff_kind.cost_total
+        is_trial = self.get_is_trial(tariff_kind)
+        if is_trial:
+            total = 1
+        return total
+
+    def get_next_payment_date(self, tariff_kind):
+        """Возвращает дату следующего платежа."""
+        return datetime.now().date() + timedelta(
+            days=30 * tariff_kind.duration
+        )
 
 
 class PromocodeSerializer(serializers.ModelSerializer):
